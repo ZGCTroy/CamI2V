@@ -1,6 +1,7 @@
 # CamI2V
  official repo of paper for "CamI2V: Camera-Controlled Image-to-Video Diffusion Model"
 
+github io:  https://zgctroy.github.io/CamI2V/
 
 ## News and ToDo List
 
