@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
+    <!-- Replace the content tag with appropriate information -->
+    <meta name="description" content="A camera-controllable image-to-video diffusion model enhanced by explicit geometry constraint.">
+    <meta property="og:title" content="CamI2V: Camera-Controlled Image-to-Video Diffusion Model" />
+    <meta property="og:description" content="A camera-controllable image-to-video diffusion model enhanced by explicit geometry constraint." />
+    <meta property="og:url" content="https://zgctroy.github.io/CamI2V/" />
+
+    <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+    <!-- <meta property="og:image" content="static/image/your_banner_image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" /> -->
+
+
+    <meta name="twitter:title" content="CamI2V: Camera-Controlled Image-to-Video Diffusion Model">
+    <meta name="twitter:description" content="A camera-controllable image-to-video diffusion model enhanced by explicit geometry constraint.">
+    <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
+    <!-- <meta name="twitter:image" content="static/images/your_twitter_banner_image.png"> -->
+    <!-- <meta name="twitter:card" content="summary_large_image"> -->
+
+    <!-- Keywords for your paper to be indexed by-->
+    <meta name="keywords" content="Camera Control, Image-to-video, Video Diffusion Model">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <title>CamI2V: Camera-Controlled Image-to-Video Diffusion Model</title>
+    <!-- <link rel="icon" type="image/x-icon" href="static/images/favicon.ico"> -->
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+    <link rel="stylesheet" href="static/css/bulma.min.css">
+    <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="static/css/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/dreampulse/computer-modern-web-font@master/fonts.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+    <script defer src="static/js/fontawesome.all.min.js"></script>
+    <script src="static/js/bulma-carousel.min.js"></script>
+    <script src="static/js/bulma-slider.min.js"></script>
+    <script src="static/js/index.js"></script>
+
+    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+                inlineMath: [['$','$'], ['\\(','\\)']]
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <!-- title and author -->
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-1 publication-title">CamI2V: Camera-Controlled Image-to-Video Diffusion Model</h1>
+                        <!-- <div class="is-size-5 publication-authors">
+                            <span class="author-block">
+                                <a href="FIRST AUTHOR PERSONAL LINK" target="_blank">First Author</a><sup>*</sup>,
+                            </span>
+                            <span class="author-block">
+                                <a href="SECOND AUTHOR PERSONAL LINK" target="_blank">Second Author</a><sup>*</sup>,
+                            </span>
+                            <span class="author-block">
+                                <a href="THIRD AUTHOR PERSONAL LINK" target="_blank">Third Author</a>
+                            </span>
+                        </div> -->
+
+                        <!-- <div class="is-size-5 publication-authors">
+                            <span class="author-block">Institution Name<br>Conferance name and year</span>
+                            <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span>
+                        </div> -->
+
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block">*Under Review, WIP</span>
+                        </div>
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+                                <!-- <span class="link-block">
+                                    <a href="https://arxiv.org/pdf/<ARXIV PAPER ID>.pdf" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <span>Paper</span>
+                                    </a>
+                                </span> -->
+
+                                <!-- <span class="link-block">
+                                    <a href="static/pdfs/supplementary_material.pdf" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <span>Supplementary</span>
+                                    </a>
+                                </span> -->
+
+                                <span class="link-block">
+                                    <a href="https://github.com/ZGCTroy/CamI2V" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fab fa-github"></i>
+                                        </span>
+                                        <span>Code</span>
+                                    </a>
+                                </span>
+
+                                <!-- <span class="link-block">
+                                    <a href="https://arxiv.org/abs/<ARXIV PAPER ID>" target="_blank"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="ai ai-arxiv"></i>
+                                        </span>
+                                        <span>arXiv</span>
+                                    </a>
+                                </span> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- first image -->
+    <section class="hero teaser">
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <img src="svgs/first_img.svg" width="100%" />
+                <h2 class="subtitle has-text-justified">
+                    <b>Rethinking condition in diffusion models.</b>
+                    Diffusion models denoise along the gradient of log probability density function. 
+                    At large noise levels, the high density region becomes the overlap of numerous noisy samples, resulting in visual blurriness.
+                    We point out that <b><em style="font-family: Times New Roman;">the effectiveness of a condition depends on how much uncertainty it reduces</em></b>. 
+                    From a new perspective, we categorize conditions into <b><em style="font-family: Times New Roman;">clean conditions</em></b> (e.g. texts, camera extrinsics) that remain visible throughout the denoising process, and <b><em style="font-family: Times New Roman;">noised conditions</em></b> (e.g. noised pixels in the current and other frames) whose deterministic information $\alpha_t x_0$ will be gradually dominated by the randomness of noise $\sigma_t \epsilon$.
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <!-- abstract -->
+    <section class="section hero is-light">
+        <div class="container is-max-desktop">
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-four-fifths">
+                    <h2 class="title is-3">Abstract</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            Recently, camera pose, as a user-friendly and physics-related condition, has been introduced into text-to-video diffusion model for camera control.
+                            However, existing methods simply inject camera conditions through a side input. These approaches neglect the inherent physical knowledge of camera pose, resulting in imprecise camera control, inconsistencies, and also poor interpretability.
+                            In this paper, we emphasize the necessity of integrating explicit physical constraints into model design.
+                            Epipolar attention is proposed for modeling all cross-frame relationships from a novel perspective of noised condition.
+                            This ensures that features are aggregated from corresponding epipolar lines in all noised frames, overcoming the limitations of current attention mechanisms in tracking displaced features across frames, especially when features move significantly with the camera and become obscured by noise.
+                            Additionally, we introduce register tokens to handle cases without intersections between frames, commonly caused by rapid camera movements, dynamic objects, or occlusions.
+                            To support image-to-video, we propose the multiple guidance scale to allow for precise control for image, text, and camera, respectively.
+                            Furthermore, we establish a more robust and reproducible evaluation pipeline to solve the inaccuracy and instability of existing camera control measurement.
+                            We achieve a 25.5% improvement in camera controllability on RealEstate10K while maintaining strong generalization to out-of-domain images.
+                            With optimization, only 24GB and 12GB is required for training and inference, respectively.
+                            We plan to release checkpoints, along with training and evaluation codes. 
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <br>
+
+    <section class="section hero is-small">
+        <!-- in domain -->
+        <div class="container has-text-centered">
+            <h2 class="title is-3">Visualization on RealEstate10K </h2>
+            <img src="gifs/re10k.gif" />
+        </div>
+
+        <!-- out of domain -->
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                <h2 class="title is-3">Visualization on out-of-domain images</h2>
+                <div id="results-carousel" class="carousel results-carousel">
+                    <div class="item">
+                        <img src="gifs/zoom_in.gif" />
+                        <h2 class="subtitle">
+                            <b>Zoom In</b>
+                        </h2>
+                    </div>
+
+                    <div class="item">
+                        <img src="gifs/zoom_out.gif" />
+                        <h2 class="subtitle">
+                            <b>Zoom Out</b>
+                        </h2>
+                    </div>
+
+                    <div class="item">
+                        <img src="gifs/orbit_left.gif" />
+                        <h2 class="subtitle">
+                            <b>Orbit Left</b>
+                        </h2>
+                    </div>
+
+                    <div class="item">
+                        <img src="gifs/orbit_right.gif" />
+                        <h2 class="subtitle">
+                            <b>Orbit Right</b>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- attention comparison -->
+    <section class="section hero teaser is-light">
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <h2 class="title is-3 has-text-centered">Attention mechanisms for tracking displaced noised features</h2>
+                <img src="svgs/attn_cmp.svg" width="100%" />
+                <h2 class="subtitle has-text-justified">
+                    Temporal attention is limited to features at the same location of picture, rendering it ineffective for significant camera movements.
+                    In contrast, 3D full attention facilitates cross-frame tracking due to its broad receptive field.
+                    However, high noise levels can obscure deterministic information, hindering consistent tracking.
+                    Our proposed epipolar attention aggregates features along the epipolar line, effectively modeling cross-frame relationships even under high noise conditions.
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <!-- cam_to_ray -->
+    <section class="section hero teaser">
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <h2 class="title is-3 has-text-centered">Camera parameterization</h2>
+                <img src="svgs/cam_to_ray.svg" width="100%" />
+                <h2 class="subtitle has-text-justified">
+                    Left: Camera representation and trajectory visualization in the world coordinate system.
+                    <br>
+                    Right: The transformation from camera representations to 3D ray representations as Pl&uuml;cker coordinates given pixel coordinates.
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section hero teaser is-light">
+        <!-- epipolar line and mask -->
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <h2 class="title is-3 has-text-centered">Epipolar line and mask</h2>
+                <img src="svgs/epipolar_line.svg" width="100%" />
+                <h2 class="subtitle has-text-justified">
+                    Left: Epipolar constraint of the $j$-th frame from one pixel at $(u,v)$ on the $i$-th frame.
+                    <br>
+                    Middle: Epipolar mask discretized by the distance threshold $\delta$, so that only neighboring pixels in green are allowed to attend while those red lined are not.
+                    <br>
+                    Right: Multi-resolution epipolar mask adaptive to the feature size in U-Net layers.
+                </h2>
+            </div>
+        </div>
+
+        <!-- epipolar attention mask -->
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <h2 class="title is-3 has-text-centered">Epipolar attention mask with register tokens</h2>
+                <img src="svgs/epipolar_attn_mask.svg" width="100%" />
+                <h2 class="subtitle has-text-justified">
+                    We specify query pixel by red point in the $i$-th frame for clarity.
+                    Epipolar attention mask is constructed by concatenating epipolar masks along all frames.
+                    We insert register tokens to key/value sequence to deal with zero epipolar scenarios.
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <!-- pipeline -->
+    <section class="section hero teaser">
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <h2 class="title is-3 has-text-centered">Pipeline of CamI2V</h2>
+                <img src="svgs/pipeline.svg" width="100%" />
+            </div>
+        </div>
+    </section>
+
+    <!-- <section class="section" id="BibTeX">
+        <div class="container is-max-desktop content">
+            <h2 class="title">BibTeX</h2>
+            <pre><code>BibTex Code Here</code></pre>
+        </div>
+    </section> -->
+
+    <footer class="footer">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-8">
+                    <div class="content">
+
+                        <p>
+                            This page was built using the 
+                            <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> 
+                            which was adopted from the 
+                            <a href="https://nerfies.github.io" target="_blank">Nerfies</a>
+                            project page.
+                            You are free to borrow the source code of this website, we just ask that you link back to
+                            this page in the footer. <br> 
+                            This website is licensed under a 
+                            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">
+                            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+                        </p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Statcounter tracking code -->
+
+    <!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+
+    <!-- End of Statcounter Code -->
+
+</body>
+
+</html>
