@@ -18,15 +18,16 @@ Recently, camera pose, as a user-friendly and physics-related condition, has bee
 
 
 ## Citation
-@inproceedings{
-anonymous2024camiv,
-title={CamI2V: Camera-Controlled Image-to-Video Diffusion Model},
-author={Anonymous},
-booktitle={Submitted to The Thirteenth International Conference on Learning Representations},
-year={2024},
-url={https://openreview.net/forum?id=dIZB7jeSUv},
-note={under review}
+```
+@inproceedings{anonymous2025camiv,
+    title={CamI2V: Camera-Controlled Image-to-Video Diffusion Model},
+    author={Anonymous},
+    booktitle={Submitted to The Thirteenth International Conference on Learning Representations},
+    year={2025},
+    url={https://openreview.net/forum?id=dIZB7jeSUv},
+    note={under review}
 }
+```
 
 
 
