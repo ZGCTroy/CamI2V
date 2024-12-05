@@ -1,0 +1,12 @@
+[submodule "evaluation/ceres-solver"]
+	path = evaluation/ceres-solver
+	url = https://github.com/ceres-solver/ceres-solver
+[submodule "evaluation/colmap"]
+	path = evaluation/colmap
+	url = https://github.com/colmap/colmap
+[submodule "evaluation/glomap"]
+	path = evaluation/glomap
+	url = https://github.com/colmap/glomap
+[submodule "evaluation/FVD"]
+	path = evaluation/FVD
+	url = https://github.com/zhizhou57/FVD
