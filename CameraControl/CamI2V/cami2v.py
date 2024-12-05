@@ -112,10 +112,16 @@ class CamI2V(LatentVisualDiffusion):
                 self.epipolar_config.soft_mask_temperature = 1.0
             if not hasattr(self.epipolar_config, "epipolar_hybrid_attention"):
                 self.epipolar_config.epipolar_hybrid_attention = False
+            if not hasattr(self.epipolar_config, "epipolar_hybrid_attention_v2"):
+                self.epipolar_config.epipolar_hybrid_attention_v2 = False
             if not hasattr(self.epipolar_config, "only_self_pixel_on_current_frame"):
                 self.epipolar_config.only_self_pixel_on_current_frame = False
             if not hasattr(self.epipolar_config, "current_frame_as_register_token"):
                 self.epipolar_config.current_frame_as_register_token = False
+            if not hasattr(self.epipolar_config, "pluker_add_type"):
+                self.epipolar_config.pluker_add_type = "add_to_pre_x_only"
+
+
 
         bound_method = new_forward_for_unet.__get__(
             self.model.diffusion_model,
@@ -375,8 +381,12 @@ class CamI2V(LatentVisualDiffusion):
         if self.epipolar_config.apply_epipolar_soft_mask:
             raise NotImplementedError
             mask = -dist * self.epipolar_config.soft_mask_temperature  # 高斯分布形式的权重
-        elif self.epipolar_config.epipolar_hybrid_attention:  # Handling Empty Epipolar Masks
+
+        if self.epipolar_config.epipolar_hybrid_attention:    # Handling Empty Epipolar Masks
             mask = torch.where(mask.any(dim=-1, keepdim=True), mask, torch.ones_like(mask))
+
+        if self.epipolar_config.epipolar_hybrid_attention_v2:  # Handling Empty Epipolar Masks
+            mask = torch.where(mask.any(dim=[2,4], keepdim=True).repeat(1,1,T,1,H*W), mask, torch.ones_like(mask))
 
         if self.epipolar_config.only_self_pixel_on_current_frame:
             # Step 1: Zero out masks for same frame interactions
@@ -719,7 +729,7 @@ class CamI2V(LatentVisualDiffusion):
                 F, H, W = x.shape[-3:]
 
                 result_dir = kwargs["result_dir"]
-                preview_path = f"/{result_dir}/preview_{uuid4().fields[0]:x}.mp4"
+                preview_path = f"{result_dir}/preview_{uuid4()}.mp4"
                 log["scene_frames_path"] = preview_path
                 log["scene_points"] = points
                 log["scene_colors"] = colors
@@ -798,7 +808,10 @@ class CamI2V(LatentVisualDiffusion):
             x_samples = self.decode_first_stage(samples)
             log["samples"] = x_samples
 
-            if "preview" in kwargs:
+            if 'resized_H' in batch:
+                F, H, W = x.shape[-3:]
+                resized_H, resized_W = batch['resized_H'][0], batch['resized_W'][0]
+                resized_H2, resized_W2 = batch['resized_H2'][0], batch['resized_W2'][0]
                 # b, c, f, h, w
                 crop_H, crop_W = min(min(resized_H, H), resized_H2), min(min(resized_W, W), resized_W2)
                 log["samples"] = transforms.CenterCrop((crop_H, crop_W))(

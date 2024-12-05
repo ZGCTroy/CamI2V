@@ -83,7 +83,8 @@ class EpipolarCrossAttention(nn.Module):
         q = self.to_q(x)
         B = q.shape[0]
 
-        context = torch.concat([self.register_tokens.repeat(B, 1, 1), context], dim=1)  # B, L2, D --> B, num_registers+L2, D
+        if self.num_register_tokens > 0:
+            context = torch.concat([self.register_tokens.repeat(B, 1, 1), context], dim=1)  # B, L2, D --> B, num_registers+L2, D
 
         k = self.to_k(context)
         v = self.to_v(context)
