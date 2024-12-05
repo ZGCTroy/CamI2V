@@ -629,12 +629,12 @@ class LatentDiffusion(DDPM):
         ## consume more GPU memory but faster
         if not self.perframe_ae:
             encoder_posterior = self.first_stage_model.encode(x)
-            results = self.get_first_stage_encoding(encoder_posterior)
+            results = self.get_first_stage_encoding(encoder_posterior).detach()
         else:  ## consume less GPU memory but slower
             results = []
             for index in range(x.shape[0]):
                 frame_batch = self.first_stage_model.encode(x[index:index+1,:,:,:])
-                frame_result = self.get_first_stage_encoding(frame_batch)
+                frame_result = self.get_first_stage_encoding(frame_batch).detach()
                 results.append(frame_result)
             results = torch.cat(results, dim=0)
 
@@ -760,7 +760,7 @@ class LatentDiffusion(DDPM):
             raise NotImplementedError()
         
         loss_simple = self.get_loss(model_output, target, mean=False).mean([1, 2, 3, 4])
-        loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean().detach()})
+        loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
 
         if self.logvar.device is not self.device:
             self.logvar = self.logvar.to(self.device)
@@ -769,16 +769,16 @@ class LatentDiffusion(DDPM):
         loss = loss_simple / torch.exp(logvar_t) + logvar_t
         # loss = loss_simple / torch.exp(self.logvar) + self.logvar
         if self.learn_logvar:
-            loss_dict.update({f'{prefix}/loss_gamma': loss.mean().detach()})
-            loss_dict.update({'logvar': self.logvar.data.mean().detach()})
+            loss_dict.update({f'{prefix}/loss_gamma': loss.mean()})
+            loss_dict.update({'logvar': self.logvar.data.mean()})
 
         loss = self.l_simple_weight * loss.mean()
 
         loss_vlb = self.get_loss(model_output, target, mean=False).mean(dim=(1, 2, 3, 4))
         loss_vlb = (self.lvlb_weights[t] * loss_vlb).mean()
-        loss_dict.update({f'{prefix}/loss_vlb': loss_vlb.detach()})
+        loss_dict.update({f'{prefix}/loss_vlb': loss_vlb})
         loss += (self.original_elbo_weight * loss_vlb)
-        loss_dict.update({f'{prefix}/loss': loss.detach()})
+        loss_dict.update({f'{prefix}/loss': loss})
 
         return loss, loss_dict  
 
