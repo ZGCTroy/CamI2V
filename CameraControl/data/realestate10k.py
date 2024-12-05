@@ -1,23 +1,12 @@
-import math
 import os
 import random
-import sys
 
 import numpy as np
 import omegaconf
 import torch
-from PIL import Image
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
-
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../'))
-import pdb
-
 from decord import VideoReader, cpu
-from einops import rearrange
-
-from CameraControl.CamI2V.epipolar import coord2pix, normalize, pix2coord
-from CameraControl.data.utils import create_relative
+from torch.utils.data import Dataset
+from torchvision import transforms
 
 
 def make_spatial_transformations(resolution, type, ori_resolution=None):
@@ -126,33 +115,6 @@ class RealEstate10K(Dataset):
             self.counter = 0
 
         print(f'============= length of dataset {len(self.metadata)} =============')
-
-    def cartesian_to_spherical(self, xyz):
-        ptsnew = np.hstack((xyz, np.zeros(xyz.shape)))
-        xy = xyz[:, 0] ** 2 + xyz[:, 1] ** 2
-        z = np.sqrt(xy + xyz[:, 2] ** 2)
-        theta = np.arctan2(np.sqrt(xy), xyz[:, 2])  # for elevation angle defined from Z-axis down
-        # ptsnew[:,4] = np.arctan2(xyz[:,2], np.sqrt(xy)) # for elevation angle defined from XY-plane up
-        azimuth = np.arctan2(xyz[:, 1], xyz[:, 0])
-        return np.array([theta, azimuth, z])
-
-    def to_relative_RT(self, org_pose):
-        org_pose = org_pose.reshape(-1, 3, 4)  # [t, 3, 4]
-        R_dst = org_pose[:, :, :3]  # [t, 3, 3]
-        T_dst = org_pose[:, :, 3:]
-
-        R_src = np.concatenate([R_dst[0:1], R_dst[:-1]], axis=0)  # [t, 3, 3]
-        T_src = np.concatenate([T_dst[0:1], T_dst[:-1]], axis=0)
-
-        R_src_inv = R_src.transpose(0, 2, 1)  # [t, 3, 3]
-
-        R_rel = R_dst @ R_src_inv  # [t, 3, 3]
-        T_rel = T_dst - R_rel @ T_src
-
-        RT_rel = np.concatenate([R_rel, T_rel], axis=-1)  # [t, 3, 4]
-        RT_rel = RT_rel.reshape(-1, 12)  # [t, 12]
-
-        return RT_rel
 
     def __getitem__(self, index):
         ## set up for dynamic resolution training

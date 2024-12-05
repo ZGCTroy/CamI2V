@@ -51,20 +51,18 @@ class Image2Video:
     def __init__(
         self,
         result_dir: str = "./gradio_results",
+        model_meta_file: str = "./models.json",
         video_length: int = 16,
         save_fps: int = 10,
         device: str = "cuda",
     ):
-        self.save_fps = save_fps
+        self.result_dir = result_dir
+        self.model_meta_file = model_meta_file
         self.video_length = video_length
+        self.save_fps = save_fps
         self.device = device
 
-        self.result_dir = result_dir
-        if not os.path.exists(self.result_dir):
-            os.mkdir(self.result_dir)
-
-        with open("models.json", "r", encoding="utf-8") as f:
-            self.model_metadata = json.load(f)
+        os.makedirs(self.result_dir, exist_ok=True)
 
         self.models: dict[str, MotionCtrl | CameraCtrl | CamI2V] = {}
         self.single_image_processors: dict[str, SingleImageForInference] = {}
@@ -173,8 +171,11 @@ class Image2Video:
             self.models[k] = v.cpu()
 
         if model_name not in self.models:
-            print(f"loading model {model_name}, metadata:", self.model_metadata[model_name])
-            model, single_image_preprocessor = self.load_model(**self.model_metadata[model_name])
+            with open(self.model_meta_file, "r", encoding="utf-8") as f:
+                model_metadata = json.load(f)[model_name]
+            print(f"loading model {model_name}, metadata:", model_metadata)
+            model, single_image_preprocessor = self.load_model(**model_metadata)
+
             self.models[model_name] = model
             self.single_image_processors[model_name] = single_image_preprocessor
             print("models loaded:", list(self.models.keys()))

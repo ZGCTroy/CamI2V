@@ -1,29 +1,17 @@
-import torch.nn as nn
-from einops import rearrange
+import logging
+
+import torch
 
 from lvdm.models.ddpm3d import LatentVisualDiffusion
 
-import torch
-from einops import rearrange, repeat
-import logging
 mainlogger = logging.getLogger('mainlogger')
-import random
-import pdb
+
+
 class DynamiCrafter(LatentVisualDiffusion):
-    def __init__(self,
-                 diffusion_model_trainable_param_list=[],
-                 *args,
-                 **kwargs):
+    def __init__(self, *args, **kwargs):
         super(DynamiCrafter, self).__init__(*args, **kwargs)
-        self.diffusion_model_trainable_param_list = diffusion_model_trainable_param_list
         for p in self.model.parameters():
             p.requires_grad = False
-
-        if 'TemporalTransformer.attn2' in self.diffusion_model_trainable_param_list:
-            for n, m in self.model.named_modules():
-                if m.__class__.__name__ == 'BasicTransformerBlock' and m.attn2.context_dim is None:       # attn2 of TemporalTransformer BasicBlocks
-                    for p in m.attn2.parameters():
-                        p.requires_grad = True
 
     def configure_optimizers(self):
         """ configure_optimizers for LatentDiffusion """
@@ -60,4 +48,14 @@ class DynamiCrafter(LatentVisualDiffusion):
 
         return optimizer
 
+    @torch.no_grad()
+    def validation_step(self, batch, batch_idx):
+        loss, loss_dict = self.shared_step(batch, random_uncond=self.classifier_free_guidance)
+        self.log_dict(loss_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
+        return loss
 
+    @torch.no_grad()
+    def test_step(self, batch, batch_idx):
+        loss, loss_dict = self.shared_step(batch, random_uncond=self.classifier_free_guidance)
+        self.log_dict(loss_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
+        return loss

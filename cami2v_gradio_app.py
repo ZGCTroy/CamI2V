@@ -43,22 +43,27 @@ max_seed = 2 ** 31
 def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
     image2video = Image2Video(result_dir, device=device)
 
-    with gr.Blocks(analytics_enabled=False, css="""#input_img {max-width: 512px !important} #output_vid {max-width: auto; max-height: auto;}""") as dynamicrafter_iface:
-        gr.Markdown("<div align='center'>"
-                    "   <h1> CamI2V: Camera-Controlled Image-to-Video Diffusion Model </h1>"
-                    "</div>")
+    with gr.Blocks(analytics_enabled=False, css="""
+        #input_img, #cam_traj {max-width: 512px !important; max-height: 320px !important;}
+        #output_vid {width: auto !important; height: auto !important;}
+    """) as dynamicrafter_iface:
+        gr.Markdown("""
+            <div align='center'>
+                <h1> CamI2V: Camera-Controlled Image-to-Video Diffusion Model </h1>
+            </div>
+        """)
 
         with gr.Row():
             with gr.Column():
                 input_image = gr.Image(label="Input Image", elem_id="input_img")
             with gr.Column():
-                output_3d = gr.Model3D(label="Camera Trajectory", clear_color=[1.0, 1.0, 1.0, 1.0])
+                output_3d = gr.Model3D(label="Camera Trajectory", elem_id="cam_traj", clear_color=[1.0, 1.0, 1.0, 1.0])
 
         with gr.Row():
             with gr.Column():
-                output_video1 = gr.Video(label="New Generated Video", elem_id="output_vid1", interactive=False, autoplay=True, loop=True)
+                output_video1 = gr.Video(label="New Generated Video", elem_id="output_vid", interactive=False, autoplay=True, loop=True)
             with gr.Column():
-                output_video2 = gr.Video(label="Previous Generated Video", elem_id="output_vid2", interactive=False, autoplay=True, loop=True)
+                output_video2 = gr.Video(label="Previous Generated Video", elem_id="output_vid", interactive=False, autoplay=True, loop=True)
                 state_last_video = gr.State(value=None)
 
         with gr.Row():
