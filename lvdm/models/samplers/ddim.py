@@ -6,7 +6,6 @@ from lvdm.common import noise_like
 from lvdm.common import extract_into_tensor
 import copy
 import math
-import pdb
 
 class DDIMSampler(object):
     def __init__(self, model, schedule="linear", **kwargs):
@@ -238,20 +237,19 @@ class DDIMSampler(object):
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None,
                       unconditional_guidance_scale=1., unconditional_conditioning=None,
                       uc_type=None, conditional_guidance_scale_temporal=None,mask=None,x0=None,guidance_rescale=0.0,
-                      enable_camera_condition=True, camera_cfg=None, camera_cfg_scheduler='constant',
                       **kwargs):
         b, *_, device = *x.shape, x.device
         if x.dim() == 5:
             is_video = True
         else:
             is_video = False
-        # pdb.set_trace()
+
         if unconditional_conditioning is None or unconditional_guidance_scale == 1.:
             model_output = self.model.apply_model(x, t, c, **kwargs) # unet denoiser
         else:
             ### do_classifier_free_guidance
             if isinstance(c, torch.Tensor) or isinstance(c, dict):
-                if enable_camera_condition:
+                if "enable_camera_condition" in kwargs and kwargs["enable_camera_condition"]:
                     unconditional_conditioning["camera_condition"] = copy.deepcopy(c["camera_condition"])
                     unconditional_conditioning["camera_condition"]["is_uc"] = True
 
@@ -261,16 +259,19 @@ class DDIMSampler(object):
                 raise NotImplementedError
 
             model_output = e_t_uncond + unconditional_guidance_scale * (e_t_cond - e_t_uncond)
-            if enable_camera_condition and isinstance(camera_cfg, float) and camera_cfg != 1.0:
-                c_without_camera_condition = {key: value for key, value in c.items() if key != "camera_condition"}
-                e_t_cond_without_camera = self.model.apply_model(x, t, c_without_camera_condition, **kwargs)
-                if camera_cfg_scheduler == "constant":
-                    scheduler_weight = 1.0
-                elif camera_cfg_scheduler == "cosine":
-                    scheduler_weight = ((1.0 - t/999) * math.pi / 2).cos().reshape(-1, 1, 1, 1)
-                else:
-                    raise NotImplementedError
-                model_output = model_output + (camera_cfg-1.0) * scheduler_weight * (e_t_cond - e_t_cond_without_camera)
+            if "enable_camera_condition" in kwargs and kwargs["enable_camera_condition"]:
+                camera_cfg = 1.0 if "camera_cfg" not in kwargs else kwargs["camera_cfg"]
+                camera_cfg_scheduler = "constant" if "camera_cfg_scheduler" not in kwargs else kwargs["camera_cfg_scheduler"]
+                if camera_cfg != 1.0:
+                    c_without_camera_condition = {key: value for key, value in c.items() if key != "camera_condition"}
+                    e_t_cond_without_camera = self.model.apply_model(x, t, c_without_camera_condition, **kwargs)
+                    if camera_cfg_scheduler == "constant":
+                        scheduler_weight = 1.0
+                    elif camera_cfg_scheduler == "cosine":
+                        scheduler_weight = ((1.0 - t/999) * math.pi / 2).cos().reshape(-1, 1, 1, 1)
+                    else:
+                        raise NotImplementedError
+                    model_output = model_output + (camera_cfg-1.0) * scheduler_weight * (e_t_cond - e_t_cond_without_camera)
 
             if guidance_rescale > 0.0:
                 model_output = rescale_noise_cfg(model_output, e_t_cond, guidance_rescale=guidance_rescale)
@@ -287,6 +288,7 @@ class DDIMSampler(object):
         alphas = self.model.alphas_cumprod if use_original_steps else self.ddim_alphas
         alphas_prev = self.model.alphas_cumprod_prev if use_original_steps else self.ddim_alphas_prev
         sqrt_one_minus_alphas = self.model.sqrt_one_minus_alphas_cumprod if use_original_steps else self.ddim_sqrt_one_minus_alphas
+        # sigmas = self.model.ddim_sigmas_for_original_num_steps if use_original_steps else self.ddim_sigmas
         sigmas = self.ddim_sigmas_for_original_num_steps if use_original_steps else self.ddim_sigmas
         # select parameters corresponding to the currently considered timestep
         

@@ -6,7 +6,7 @@ from torch.utils.checkpoint import checkpoint
 from transformers import T5Tokenizer, T5EncoderModel, CLIPTokenizer, CLIPTextModel
 from lvdm.common import autocast
 from utils.utils import count_params
-import pdb
+
 
 class AbstractEncoder(nn.Module):
     def __init__(self):

@@ -17,8 +17,6 @@ from lvdm.common import (
     default,
 )
 from lvdm.basics import zero_module
-import pdb
-from torch import Tensor
 
 
 class RelativePosition(nn.Module):
@@ -45,10 +43,10 @@ class RelativePosition(nn.Module):
 
 class CrossAttention(nn.Module):
 
-    def __init__(self, query_dim, context_dim=None, out_dim=None, heads=8, dim_head=64, dropout=0.,
+    def __init__(self, query_dim, context_dim=None, heads=8, dim_head=64, dropout=0.,
                  relative_position=False, temporal_length=None, video_length=None,
                  image_cross_attention=False, image_cross_attention_scale=1.0, image_cross_attention_scale_learnable=False,
-                 disable_text_cross_attention=False, text_context_len=77):
+                 text_context_len=77):
         super().__init__()
         inner_dim = dim_head * heads
         self.context_dim = context_dim
@@ -60,12 +58,8 @@ class CrossAttention(nn.Module):
         self.to_q = nn.Linear(query_dim, inner_dim, bias=False)
         self.to_k = nn.Linear(context_dim, inner_dim, bias=False)
         self.to_v = nn.Linear(context_dim, inner_dim, bias=False)
-        self.dropout = dropout
-        self.out_dim = out_dim
-        if out_dim is not None:
-            self.to_out = nn.Sequential(nn.Linear(inner_dim, out_dim), nn.Dropout(dropout))
-        else:
-            self.to_out = nn.Sequential(nn.Linear(inner_dim, query_dim), nn.Dropout(dropout))
+
+        self.to_out = nn.Sequential(nn.Linear(inner_dim, query_dim), nn.Dropout(dropout))
 
         self.relative_position = relative_position
         if self.relative_position:
@@ -75,11 +69,9 @@ class CrossAttention(nn.Module):
         else:
             ## only used for spatial attention, while NOT for temporal attention
             if XFORMERS_IS_AVAILBLE and temporal_length is None:
-                # if XFORMERS_IS_AVAILBLE:
                 self.forward = self.efficient_forward
 
         self.video_length = video_length
-        self.disable_text_cross_attention = disable_text_cross_attention
         self.image_cross_attention = image_cross_attention
         self.image_cross_attention_scale = image_cross_attention_scale
         self.text_context_len = text_context_len
@@ -105,7 +97,7 @@ class CrossAttention(nn.Module):
             k_ip = self.to_k_ip(context_image)
             v_ip = self.to_v_ip(context_image)
         else:
-            if not spatial_self_attn and not self.disable_text_cross_attention:
+            if not spatial_self_attn:
                 context = context[:, :self.text_context_len, :]
             k = self.to_k(context)
             v = self.to_v(context)
@@ -154,7 +146,6 @@ class CrossAttention(nn.Module):
         return self.to_out(out)
 
     def efficient_forward(self, x, context=None, mask=None):
-        # pdb.set_trace()
         spatial_self_attn = (context is None)
         k_ip, v_ip, out_ip = None, None, None
 
@@ -168,7 +159,7 @@ class CrossAttention(nn.Module):
             k_ip = self.to_k_ip(context_image)
             v_ip = self.to_v_ip(context_image)
         else:
-            if not spatial_self_attn and not self.disable_text_cross_attention:
+            if not spatial_self_attn:
                 context = context[:, :self.text_context_len, :]
             k = self.to_k(context)
             v = self.to_v(context)
@@ -273,7 +264,7 @@ class SpatialTransformer(nn.Module):
 
     def __init__(self, in_channels, n_heads, d_head, depth=1, dropout=0., context_dim=None,
                  use_checkpoint=True, disable_self_attn=False, use_linear=False, video_length=None,
-                 image_cross_attention=False, image_cross_attention_scale_learnable=False, is_output_block=False,ds=1):
+                 image_cross_attention=False, image_cross_attention_scale_learnable=False, is_output_block=False, ds=1):
         super().__init__()
         self.ds = ds
         self.in_channels = in_channels
