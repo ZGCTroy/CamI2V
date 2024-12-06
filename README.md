@@ -13,6 +13,7 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 !!!!! Code is not complete and clean. Environment installer, training scripts, evaluation code and gradio demo are on the way. In addition, we implement camera control methods using code injected to lvdm, which is not easy for python beginners. We will reconstruct code in several weeks. !!!! 
 
+- [x]  :fire: 2024/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
 - [x]  :fire: 2024/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
 - [x]  :fire: 2024/11/16: Update project page for more visualization.
 - [x]  :fire: 2024/11/16: Release most code for training and inference of CamI2V, including implementation for MotionCtrl and CameraCtrl.
