@@ -1,24 +1,11 @@
 import logging
-import os
-from uuid import uuid4
 
-import imageio
-import numpy as np
-import open3d as o3d
 import torch
-from einops import rearrange
+from einops import rearrange, repeat
 from packaging import version as pver
 from torch import Tensor
-from torchvision import transforms
 
-from CameraControl.data.realestate10k import make_spatial_transformations
-from CameraControl.data.utils import (
-    apply_thresholded_conv,
-    constrain_to_multiple_of,
-    remove_outliers,
-)
 from CameraControl.dynamicrafter.dynamicrafter import DynamiCrafter
-from scripts.gradio.preview import render
 from utils.utils import instantiate_from_config
 
 mainlogger = logging.getLogger('mainlogger')
@@ -29,7 +16,6 @@ class CameraControlLVDM(DynamiCrafter):
                  diffusion_model_trainable_param_list=[],
                  pose_encoder_trainable=True,
                  pose_encoder_config=None,
-                 depth_predictor_config=None,
                  normalize_T0=False,
                  weight_decay=1e-2,
                  *args,
@@ -73,19 +59,6 @@ class CameraControlLVDM(DynamiCrafter):
                     param.requires_grad = False
         else:
             self.pose_encoder = None
-
-        self.depth_predictor_config = depth_predictor_config
-        if depth_predictor_config is not None:
-            self.depth_predictor = instantiate_from_config(depth_predictor_config)
-            self.depth_predictor.load_state_dict(torch.load(depth_predictor_config["pretrained_model_path"], map_location='cpu', weights_only=True))
-            self.max_depth = depth_predictor_config["params"]["max_depth"]
-            self.register_buffer("depth_predictor_normalizer_mean", torch.tensor([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1))
-            self.register_buffer("depth_predictor_normalizer_std", torch.tensor([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1))
-            self.depth_predictor = self.depth_predictor.eval()
-            for n, p in self.depth_predictor.named_parameters():
-                p.requires_grad = False
-        else:
-            self.depth_predictor = None
 
     def configure_optimizers(self):
         """ configure_optimizers for LatentDiffusion """
@@ -209,6 +182,100 @@ class CameraControlLVDM(DynamiCrafter):
 
         return relative_RT_4x4
 
+    def get_batch_input(self, batch, random_uncond, return_first_stage_outputs=False, return_original_cond=False, return_fs=False,
+                        return_cond_frame_index=False, return_cond_frame=False, return_original_input=False, rand_cond_frame=None,
+                        enable_camera_condition=True, return_camera_data=False, return_video_path=False,
+                        trace_scale_factor=1.0, cond_frame_index=None, **kwargs):
+        ## x: b c t h w
+        x = super().get_input(batch, self.first_stage_key)
+        ## encode video frames x to z via a 2D encoder
+        z = self.encode_first_stage(x)
+        batch_size, num_frames, device, H, W = x.shape[0], x.shape[2], self.model.device, x.shape[3], x.shape[4]
+
+        ## get caption condition
+        cond_input = batch[self.cond_stage_key]
+
+        if isinstance(cond_input, dict) or isinstance(cond_input, list):
+            cond_emb = self.get_learned_conditioning(cond_input)
+        else:
+            cond_emb = self.get_learned_conditioning(cond_input.to(self.device))
+
+        cond = {}
+        ## to support classifier-free guidance, randomly drop out only text conditioning 5%, only image conditioning 5%, and both 5%.
+        if random_uncond:
+            random_num = torch.rand(x.size(0), device=x.device)
+        else:
+            random_num = torch.ones(x.size(0), device=x.device)  ## by doning so, we can get text embedding and complete img emb for inference
+        prompt_mask = rearrange(random_num < 2 * self.uncond_prob, "n -> n 1 1")
+        input_mask = 1 - rearrange((random_num >= self.uncond_prob).float() * (random_num < 3 * self.uncond_prob).float(), "n -> n 1 1 1")
+
+        if not hasattr(self, "null_prompt"):
+            self.null_prompt = self.get_learned_conditioning([""])
+        prompt_imb = torch.where(prompt_mask, self.null_prompt, cond_emb.detach())
+
+        ## get conditioning frame
+        if cond_frame_index is None:
+            cond_frame_index = torch.zeros(batch_size, device=device, dtype=torch.long)
+            rand_cond_frame = self.rand_cond_frame if rand_cond_frame is None else rand_cond_frame
+            if rand_cond_frame:
+                cond_frame_index = torch.randint(0, self.model.diffusion_model.temporal_length, (batch_size,), device=device)
+
+        img = x[torch.arange(batch_size, device=device), :, cond_frame_index, ...]
+        img = input_mask * img
+        ## img: b c h w
+        img_emb = self.embedder(img)  ## b l c
+        img_emb = self.image_proj_model(img_emb)
+
+        if self.model.conditioning_key == 'hybrid':
+            if self.interp_mode:
+                ## starting frame + (L-2 empty frames) + ending frame
+                img_cat_cond = torch.zeros_like(z)
+                img_cat_cond[:, :, 0, :, :] = z[:, :, 0, :, :]
+                img_cat_cond[:, :, -1, :, :] = z[:, :, -1, :, :]
+            else:
+                ## simply repeat the cond_frame to match the seq_len of z
+                img_cat_cond = z[torch.arange(batch_size, device=device), :, cond_frame_index, :, :]
+                img_cat_cond = img_cat_cond.unsqueeze(2)
+                img_cat_cond = repeat(img_cat_cond, 'b c t h w -> b c (repeat t) h w', repeat=z.shape[2])
+
+            cond["c_concat"] = [img_cat_cond]  # b c t h w
+            cond["c_cond_frame_index"] = cond_frame_index
+            cond["origin_z_0"] = z.clone()
+        cond["c_crossattn"] = [torch.cat([prompt_imb, img_emb], dim=1)]  ## concat in the seq_len dim
+
+        ########################################### only change here, add camera_condition input ###########################################
+        if enable_camera_condition:
+            cond.update(self.get_batch_input_camera_condition_process(batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame))
+        ########################################### only change here, add camera_condition input ###########################################
+
+        out = [z, cond]
+        if return_first_stage_outputs:
+            xrec = self.decode_first_stage(z)
+            out.extend([xrec])
+
+        if return_original_cond:
+            out.append(cond_input)
+        if return_fs:
+            if self.fps_condition_type == 'fs':
+                fs = super().get_input(batch, 'frame_stride')
+            elif self.fps_condition_type == 'fps':
+                fs = super().get_input(batch, 'fps')
+            out.append(fs)
+        if return_cond_frame_index:
+            out.append(cond_frame_index)
+        if return_cond_frame:
+            out.append(x[torch.arange(batch_size, device=device), :, cond_frame_index, ...].unsqueeze(2))
+        if return_original_input:
+            out.append(x)
+        if return_camera_data:
+            camera_data = batch.get('camera_data', None)
+            out.append(camera_data)
+
+        if return_video_path:
+            out.append(batch['video_path'])
+
+        return out
+
     @torch.no_grad()
     def log_images(
         self,
@@ -293,95 +360,10 @@ class CameraControlLVDM(DynamiCrafter):
             else:
                 uc = None
 
-            if "preview" in kwargs:
-                assert kwargs["preview"] is True
-                device = z.device
-                camera_intrinsics_3x3 = super().get_input(batch, 'camera_intrinsics').float()  # b, t, 3, 3
-
-                w2c_RT_4x4 = super().get_input(batch, 'RT').float()  # b, t, 4, 4
-                c2w_RT_4x4 = w2c_RT_4x4.inverse()  # w2c --> c2w
-                B, T = c2w_RT_4x4.shape[0], c2w_RT_4x4.shape[1]
-                relative_c2w_RT_4x4 = self.get_relative_pose(c2w_RT_4x4, cond_frame_index, mode='left', normalize_T0=self.normalize_T0)  # b,t,4,4
-                relative_c2w_RT_4x4[:, :, :3, 3] = relative_c2w_RT_4x4[:, :, :3, 3] * trace_scale_factor
-
-                resized_H, resized_W = batch['resized_H'][0], batch['resized_W'][0]
-                resized_H2, resized_W2 = batch['resized_H2'][0], batch['resized_W2'][0]
-                points, colors, points_x, points_y = self.construct_3D_scene(
-                    x, cond_frame_index, camera_intrinsics_3x3, device,
-                    resized_H=resized_H, resized_W=resized_W
-                )
-                F, H, W = x.shape[-3:]
-
-                result_dir = kwargs["result_dir"]
-                preview_path = f"/{result_dir}/preview_{uuid4().fields[0]:x}.mp4"
-                log["scene_frames_path"] = preview_path
-                log["scene_points"] = points
-                log["scene_colors"] = colors
-                log["scene_points_x"] = points_x
-                log["scene_points_y"] = points_y
-                if os.path.exists(preview_path):
-                    os.remove(preview_path)
-                scene_frames = render(
-                    (W, H),
-                    camera_intrinsics_3x3[0, 0, :, :].cpu().numpy(),
-                    relative_c2w_RT_4x4[0].inverse().cpu().numpy(),
-                    points,
-                    colors,
-                )  # b, h, w, c
-                print('scene_frames1', scene_frames.shape, (resized_H, resized_W), (H, W))
-                scene_frames = transforms.CenterCrop((min(resized_H, H), min(resized_W, W)))(
-                    rearrange(torch.from_numpy(scene_frames), 'b h w c -> b c h w')
-                )
-                scene_frames = torch.nn.functional.interpolate(
-                    scene_frames,  # b c h w
-                    (
-                        constrain_to_multiple_of(scene_frames.shape[-2], multiple_of=16),
-                        constrain_to_multiple_of(scene_frames.shape[-1], multiple_of=16),
-                    ),
-                    mode="bilinear", align_corners=True
-                )
-                scene_frames = rearrange(scene_frames, 'b c h w -> b h w c').numpy()
-                print('scene_frames2', scene_frames.shape)
-
-                print(scene_frames.shape, scene_frames.dtype, scene_frames.min(), scene_frames.max())
-                imageio.mimsave(preview_path, scene_frames, fps=10)
-
-                if 'paste_3d_scene' in kwargs and kwargs['paste_3d_scene']:
-                    if "spatial_transform" in kwargs:
-                        spatial_transform = kwargs.pop("spatial_transform")
-                    else:
-                        spatial_transform = make_spatial_transformations((H, W), type='resize_center_crop')
-                    # video_reader = VideoReader(preview_path, ctx=cpu(0))
-                    # scene_frames = video_reader.get_batch(list(range(F))).asnumpy()
-                    scene_frames = rearrange(
-                        transforms.CenterCrop((H, W))(
-                            rearrange(torch.from_numpy(scene_frames), 'b h w c -> b c h w')
-                        ),
-                        'b c h w -> b h w c'
-                    ).numpy()
-                    scene_frames = torch.from_numpy(scene_frames).permute(3, 0, 1, 2).float().to(device)  # [t,h,w,c] -> [c,t,h,w]
-                    scene_frames = spatial_transform(scene_frames)
-                    scene_frames = (scene_frames / 255 - 0.5) * 2  # c,f,h,w
-
-                    kwargs['paste_3d_scene_frames'] = self.encode_first_stage(scene_frames.unsqueeze(0)).clone()  # b=1,c,f,h,w
-                    kwargs['paste_3d_scene_frames'][0, :, :1, :, :] = z[0, :, :1, :, :]
-                    kwargs['paste_3d_scene_mask'] = torch.where(
-                        (scene_frames - (-1.0)).abs() < 1e-4,
-                        0.0,
-                        1.0
-                    ).amax(0)  # c,f,h,w --> f,h,w
-                    kwargs['paste_3d_scene_mask'] = apply_thresholded_conv(kwargs['paste_3d_scene_mask'].unsqueeze(0), kernel_size=5, threshold=1.0).squeeze(0)
-                    # kwargs['paste_3d_scene_mask'] = kwargs['paste_3d_scene_mask'] * kwargs['paste_3d_scene_mask'][cond_frame_index, :, :] # (f,h,w) * (1,h,w) --> (f,h,w)
-                    kwargs['paste_3d_scene_mask'] = torch.nn.functional.interpolate(
-                        kwargs['paste_3d_scene_mask'].unsqueeze(0),  # f,h,w --> 1,f,h,w
-                        (H // 8, W // 8),
-                        mode="bilinear", align_corners=True
-                    ).unsqueeze(1)  # 1,1,f,h,w
-                    kwargs['paste_3d_scene_mask'] = torch.where(
-                        kwargs['paste_3d_scene_mask'] < 0.95,
-                        0.0,
-                        1.0
-                    ).repeat(1, 4, 1, 1, 1).to(device)  # b=1,1,f,h,w --> b=1,4,f,h,w
+            pre_process_log, pre_process_kwargs = self.log_images_sample_log_pre_process(
+                batch, z, x, cond_frame_index, trace_scale_factor, **kwargs
+            )
+            kwargs.update(pre_process_kwargs)
 
             with self.ema_scope("Plotting"):
                 samples, z_denoise_row = self.sample_log(cond=c, batch_size=N, ddim=use_ddim,
@@ -392,86 +374,20 @@ class CameraControlLVDM(DynamiCrafter):
             x_samples = self.decode_first_stage(samples)
             log["samples"] = x_samples
 
-            if "preview" in kwargs:
-                # b, c, f, h, w
-                crop_H, crop_W = min(min(resized_H, H), resized_H2), min(min(resized_W, W), resized_W2)
-                log["samples"] = transforms.CenterCrop((crop_H, crop_W))(
-                    rearrange(x_samples, '1 c f h w -> (1 c) f h w')
-                )
-                log["samples"] = torch.nn.functional.interpolate(
-                    log["samples"],  # b c h w
-                    (
-                        constrain_to_multiple_of(crop_H, multiple_of=2),
-                        constrain_to_multiple_of(crop_W, multiple_of=2),
-                    ),
-                    mode="bilinear", align_corners=True
-                )
-                log["samples"] = rearrange(
-                    log["samples"],
-                    '(1 c) f h w -> 1 c f h w'
-                )
-                print('crop valid part to', log['samples'].shape)
+            log.update(self.log_images_sample_log_post_process(x_samples, **pre_process_log))
 
             if plot_denoise_rows:
                 denoise_grid = self._get_denoise_row_from_list(z_denoise_row)
                 log["denoise_row"] = denoise_grid
 
         return log
+    
+    def get_batch_input_camera_condition_process(self, *args, **kwargs):
+        return {}
 
-    def construct_3D_scene(self, video, cond_frame_index, camera_intrinsics, device,
-                           is_remove_outliers=True, resized_H=None, resized_W=None):
-        '''
-        :param video: b=1,c,f,h,w;  value between [0,1]
-        :param cond_frame_index: (b,)
-        :param camera_intrinsics: (b,f,3,3)
-        :return:
-        '''
-        B, C, F, H, W = video.shape
-        cond_camera_intrinsics = camera_intrinsics[0, 0, :, :].cpu()  # b,f,3,3 --> 3x3
-        fx, fy = cond_camera_intrinsics[0][0].item(), cond_camera_intrinsics[1][1].item()
-        cx, cy = cond_camera_intrinsics[0][2].item(), cond_camera_intrinsics[1][2].item()
-        if resized_H is not None and resized_W is not None:
-            H, W = min(resized_H, H), min(resized_W, W)
-            cx, cy = W // 2, H // 2
-            video = transforms.CenterCrop((H, W))(
-                rearrange(video, 'b c f h w -> (b c) f h w')
-            )
-            video = rearrange(video, '(b c) f h w -> b c f h w', b=B, c=C)
-            print(H, W, video.shape)
+    def log_images_sample_log_pre_process(self, *args, **kwargs):
+        return {}, {}
 
-        x, y = np.meshgrid(np.arange(W), np.arange(H))
-        x = (x - cx) / fx
-        y = (y - cy) / fy
-
-        if hasattr(self, "depth_predictor") and self.depth_predictor is not None:
-            color_image = torch.nn.functional.interpolate(
-                video[torch.arange(B, device=device), :, cond_frame_index, ...] / 2 + 0.5,  # (b, c, H, W), [-1,1] --> [0,1]
-                (constrain_to_multiple_of(H, multiple_of=14), constrain_to_multiple_of(W, multiple_of=14)),
-                mode="bilinear", align_corners=True
-            )  # b,3,H,W;  value from 0 to 1
-            color_image = (color_image - self.depth_predictor_normalizer_mean) / self.depth_predictor_normalizer_std  # b,3,H,W;  value from -1 to 1
-            depth_map = self.depth_predictor(color_image) / self.max_depth  # x:b,3,H,W --> b,H,W, value from 0 to 1
-            depth_map = (depth_map - 0.5) * 2  # [-1,1]
-            depth_map = torch.nn.functional.interpolate(depth_map[:, None], (H, W), mode="bilinear", align_corners=True)  # b,1,H//8,W///8
-            depth_map = (
-                    (depth_map[0] + 1).cpu() / 2 * self.max_depth
-            )  # 1,h,w;  value in [0,1] --> [0, max_depth]
-            color_image = video[0, :, 0, :, :]  # B=1 x c x 1 x h x w --> c x h x w
-            color_image = color_image.permute(1, 2, 0).cpu().numpy() / 2 + 0.5  # h x w x c; value between [0,1]
-
-            z = np.array(depth_map)
-            points = np.stack((np.multiply(x, z), np.multiply(y, z), z), axis=-1).reshape(-1, 3)
-            colors = color_image.reshape(-1, 3)  # [0,1]
-        else:
-            points = np.array([[0, 0, 0]]).reshape(-1, 3)
-            colors = np.array([[0, 0, 0]]).reshape(-1, 3)
-
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(points)
-        pcd.colors = o3d.utility.Vector3dVector(colors)
-        if is_remove_outliers:
-            pcd = remove_outliers(pcd)
-        points = np.asarray(pcd.points)
-        colors = np.asarray(pcd.colors)
-        print(type(points), points.shape, colors.shape)
-        return points, colors, x, y  # N,3;  N,3
+    def log_images_sample_log_post_process(self, *args, **kwargs):
+        return {}
+    

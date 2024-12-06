@@ -22,3 +22,4 @@ timm
 kornia
 fairscale
 diffusers
+httpx[socks]
