@@ -52,6 +52,9 @@ class MotionCtrl(CameraControlLVDM):
                     _module.add_module('cc_projection', cc_projection)
 
     def get_batch_input_camera_condition_process(self, batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame, *args, **kwargs):
+        return_log = {}
+        return_kwargs = {}
+
         with torch.no_grad(),  torch.autocast('cuda', enabled=False):
             w2c_RT_4x4 = super().get_input(batch, 'RT').float()  # b, t, 4, 4
             c2w_RT_4x4 = w2c_RT_4x4.inverse()  # w2c --> c2w
@@ -61,8 +64,8 @@ class MotionCtrl(CameraControlLVDM):
 
             relative_w2c_RT_4x4 = relative_c2w_RT_4x4.inverse()
 
-        return {
-            "camera_condition": {
-                "RT": rearrange(relative_w2c_RT_4x4[:, :, :3, :4], "b t x y -> b t (x y)"),
-            }
+        return_kwargs["camera_condition"] = {
+            "RT": rearrange(relative_w2c_RT_4x4[:, :, :3, :4], "b t x y -> b t (x y)"),
         }
+
+        return return_log, return_kwargs
