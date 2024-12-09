@@ -158,8 +158,12 @@ class CamI2V(CameraControlLVDM):
         if self.epipolar_config.apply_epipolar_soft_mask:
             raise NotImplementedError
             mask = -dist * self.epipolar_config.soft_mask_temperature  # 高斯分布形式的权重
-        elif self.epipolar_config.epipolar_hybrid_attention:  # Handling Empty Epipolar Masks
+
+        if self.epipolar_config.epipolar_hybrid_attention:    # Handling Empty Epipolar Masks
             mask = torch.where(mask.any(dim=-1, keepdim=True), mask, torch.ones_like(mask))
+
+        if self.epipolar_config.epipolar_hybrid_attention_v2:  # Handling Empty Epipolar Masks
+            mask = torch.where(mask.any(dim=[2,4], keepdim=True).repeat(1,1,T,1,H*W), mask, torch.ones_like(mask))
 
         if self.epipolar_config.only_self_pixel_on_current_frame:
             # Step 1: Zero out masks for same frame interactions
@@ -182,6 +186,9 @@ class CamI2V(CameraControlLVDM):
         return rearrange(mask, "B T1 T2 HW1 HW2 -> B (T1 HW1) (T2 HW2)")
 
     def get_batch_input_camera_condition_process(self, batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame, *args, **kwargs):
+        return_log = {}
+        return_kwargs = {}
+
         batch_size, num_frames, device, H, W = x.shape[0], x.shape[2], self.model.device, x.shape[3], x.shape[4]
         with torch.no_grad(),  torch.autocast('cuda', enabled=False):
             camera_intrinsics_3x3 = super().get_input(batch, 'camera_intrinsics').float()  # b, t, 3, 3
@@ -211,11 +218,11 @@ class CamI2V(CameraControlLVDM):
         else:
             pluker_embedding_features = None
 
-        return {
-            "camera_condition": {
-                "pluker_embedding_features": pluker_embedding_features,
-                "sample_locs_dict": sample_locs_dict,
-                "cond_frame_index": cond_frame_index,
-                "add_type": self.add_type,
-            }
+        return_kwargs["camera_condition"] = {
+            "pluker_embedding_features": pluker_embedding_features,
+            "sample_locs_dict": sample_locs_dict,
+            "cond_frame_index": cond_frame_index,
+            "add_type": self.add_type,
         }
+
+        return return_log, return_kwargs

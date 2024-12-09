@@ -184,7 +184,7 @@ class CameraControlLVDM(DynamiCrafter):
 
     def get_batch_input(self, batch, random_uncond, return_first_stage_outputs=False, return_original_cond=False, return_fs=False,
                         return_cond_frame_index=False, return_cond_frame=False, return_original_input=False, rand_cond_frame=None,
-                        enable_camera_condition=True, return_camera_data=False, return_video_path=False,
+                        enable_camera_condition=True, return_camera_data=False, return_video_path=False, return_depth_scale=False,
                         trace_scale_factor=1.0, cond_frame_index=None, **kwargs):
         ## x: b c t h w
         x = super().get_input(batch, self.first_stage_key)
@@ -244,8 +244,14 @@ class CameraControlLVDM(DynamiCrafter):
         cond["c_crossattn"] = [torch.cat([prompt_imb, img_emb], dim=1)]  ## concat in the seq_len dim
 
         ########################################### only change here, add camera_condition input ###########################################
+        depth_scale = torch.ones((batch_size,), device=device)
         if enable_camera_condition:
-            cond.update(self.get_batch_input_camera_condition_process(batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame))
+            camera_condition_log, camera_condition_kwargs = self.get_batch_input_camera_condition_process(
+                batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame
+            )
+            if "depth_scale" in camera_condition_log:
+                depth_scale = camera_condition_log["depth_scale"]
+            cond.update(camera_condition_kwargs)
         ########################################### only change here, add camera_condition input ###########################################
 
         out = [z, cond]
@@ -274,6 +280,9 @@ class CameraControlLVDM(DynamiCrafter):
         if return_video_path:
             out.append(batch['video_path'])
 
+        if return_depth_scale:
+            out.append(depth_scale)
+
         return out
 
     @torch.no_grad()
@@ -301,7 +310,7 @@ class CameraControlLVDM(DynamiCrafter):
         use_ddim = ddim_steps is not None
         log = dict()
 
-        z, c, xrec, xc, fs, cond_frame_index, cond_x, x, camera_data, video_path = self.get_batch_input(
+        z, c, xrec, xc, fs, cond_frame_index, cond_x, x, camera_data, video_path, depth_scale = self.get_batch_input(
             batch,
             random_uncond=False,
             return_first_stage_outputs=True,
@@ -314,11 +323,13 @@ class CameraControlLVDM(DynamiCrafter):
             return_original_input=True,
             return_camera_data=True,
             return_video_path=True,
+            return_depth_scale=True,
             trace_scale_factor=trace_scale_factor,
             cond_frame_index=cond_frame_index,
         )
 
         N = xrec.shape[0]
+        log["depth_scale"] = depth_scale
         log["camera_data"] = camera_data
         log["video_path"] = video_path
         log["gt_video"] = x
@@ -363,6 +374,7 @@ class CameraControlLVDM(DynamiCrafter):
             pre_process_log, pre_process_kwargs = self.log_images_sample_log_pre_process(
                 batch, z, x, cond_frame_index, trace_scale_factor, **kwargs
             )
+            log.update(pre_process_log)
             kwargs.update(pre_process_kwargs)
 
             with self.ema_scope("Plotting"):
@@ -381,13 +393,12 @@ class CameraControlLVDM(DynamiCrafter):
                 log["denoise_row"] = denoise_grid
 
         return log
-    
+
     def get_batch_input_camera_condition_process(self, *args, **kwargs):
-        return {}
+        return {}, {}
 
     def log_images_sample_log_pre_process(self, *args, **kwargs):
         return {}, {}
 
     def log_images_sample_log_post_process(self, *args, **kwargs):
         return {}
-    

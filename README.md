@@ -13,10 +13,11 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 !!!!! Code is not complete and clean. Environment installer, training scripts, evaluation code and gradio demo are on the way. In addition, we implement camera control methods using code injected to lvdm, which is not easy for python beginners. We will reconstruct code in several weeks. !!!! 
 
+- [x]  :fire: 2024/12/09: Release training configs and scripts.
 - [x]  :fire: 2024/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
 - [x]  :fire: 2024/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
 - [x]  :fire: 2024/11/16: Update project page for more visualization.
-- [x]  :fire: 2024/11/16: Release most code for training and inference of CamI2V, including implementation for MotionCtrl and CameraCtrl.
+- [x]  :fire: 2024/11/16: Release model code for training and inference of CamI2V, including implementation for MotionCtrl and CameraCtrl.
 - [x]  :seedling: 2024/10/14: Release of checkpoints, training, and evaluation codes in months.
 
 
@@ -79,6 +80,30 @@ conda install -y xformers -c xformers
 pip install -r requirements.txt
 ```
 
+### Download Pretrained Models
+
+Download [DynamiCrafter](https://huggingface.co/Doubiiu/DynamiCrafter) and [CLIP-ViT-H-14-laion2B-s32B-b79K](https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K), put under `pretrained_models` folder:
+
+```shell
+─┬─ pretrained_models\
+ ├─── CLIP-ViT-H-14-laion2B-s32B-b79K\
+ └─── DynamiCrafter\
+```
+
+### Prepare Dataset
+
+Please follow instructions in [datasets](datasets) folder in this repo to download [RealEstate10K](https://google.github.io/realestate10k) dataset and pre-process necessary items like `video_clips` and `valid_metadata`.
+
+## :rocket: Training
+
+Start training by passing config yaml to `--base` argument of `main/trainer.py`. Example training configs are provided in `configs` folder.
+
+```shell
+torchrun --standalone --nproc_per_node 8 main/trainer.py --train \
+    --logdir $(pwd)/logs \
+    --base configs/<YOUR_CONFIG_NAME>.yaml \
+    --name <YOUR_LOG_NAME>
+```
 
 ## :wrench: Evaluation
 

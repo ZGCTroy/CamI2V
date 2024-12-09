@@ -195,22 +195,16 @@ class RealEstate10K(Dataset):
         ## spatial transformations
         if self.spatial_transform is not None:
             if self.spatial_transform_type == 'resize_center_crop':
-                ori_H, ori_W = frames.shape[-2:]
                 sample_H, sample_W = self.resolution[0], self.resolution[1]
-                if sample_H == sample_W:
-                    scale = sample_W / min(ori_H, ori_W)
-                    fx *= ori_W * scale
-                    fy *= ori_H * scale
-                    cx *= sample_W
-                    cy *= sample_H
+                if sample_H <= sample_W:
+                    scale = sample_H / ori_H
                 else:
-                    scale = min(sample_H, sample_W) / min(ori_H, ori_W)
-                    fx *= ori_W * scale
-                    fy *= ori_H * scale
-                    cx *= sample_W
-                    cy *= sample_H
-            else:
-                raise NotImplementedError
+                    scale = sample_W / ori_W
+                fx *= ori_W * scale
+                fy *= ori_H * scale
+                cx *= sample_W
+                cy *= sample_H
+
             frames = self.spatial_transform(frames)
 
         if self.resolution is not None:

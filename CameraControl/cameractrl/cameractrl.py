@@ -51,6 +51,9 @@ class CameraCtrl(CameraControlLVDM):
                     _module.add_module('cc_projection', cc_projection)
 
     def get_batch_input_camera_condition_process(self, batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame, *args, **kwargs):
+        return_log = {}
+        return_kwargs = {}
+
         batch_size, num_frames, device, H, W = x.shape[0], x.shape[2], self.model.device, x.shape[3], x.shape[4]
         with torch.no_grad(),  torch.autocast('cuda', enabled=False):
             camera_intrinsics_3x3 = super().get_input(batch, 'camera_intrinsics').float()  # b, t, 3, 3
@@ -70,8 +73,8 @@ class CameraCtrl(CameraControlLVDM):
         else:
             pluker_embedding_features = None
 
-        return {
-            "camera_condition": {
+        return_kwargs["camera_condition"] = {
                 "pluker_embedding_features": pluker_embedding_features,
             }
-        }
+
+        return return_log, return_kwargs

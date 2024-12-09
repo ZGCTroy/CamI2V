@@ -159,7 +159,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+ckpts/*.pt
 datasets/RealEstate10K/
 gradio_results/
-configs/*/*.yaml
-ckpts/*.pt
+logs/
+pretrained_models/
