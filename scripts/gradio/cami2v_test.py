@@ -88,7 +88,7 @@ class Image2Video:
             p.requires_grad = False
 
         if ckpt_path:
-            state_dict = torch.load(ckpt_path, map_location="cpu")
+            state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
             if "module" in state_dict:  # deepspeed checkpoint
                 state_dict = state_dict["module"]
             elif "state_dict" in state_dict:  # lightning checkpoint
@@ -130,7 +130,7 @@ class Image2Video:
     def get_image(
         self,
         model_name: str,
-        ref_img: Image,
+        ref_img: Image.Image,
         caption: str,
         camera_pose_type: str,
         trace_extract_ratio: float = 1.0,
@@ -139,15 +139,15 @@ class Image2Video:
         trace_scale_factor: float = 1.0,
         camera_cfg: float = 1.0,
         cfg_scale: float = 7.5,
-        eta: float = 1.0,
         seed: int = 123,
         enable_camera_condition: bool = True,
-        loop: bool = False,
         use_bezier_curve: bool = False,
         bezier_coef_a: float = None,
         bezier_coef_b: float = None,
+        loop: bool = False,
         cond_frame_index: int = 0,
-        ref_img2: Image = None,
+        eta: float = 1.0,
+        ref_img2: Image.Image = None,
     ):
         with open("prompts/camera_pose_files/meta_data.json", "r", encoding="utf-8") as f:
             camera_pose_file_path = json.load(f)[camera_pose_type]

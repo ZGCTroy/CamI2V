@@ -93,13 +93,13 @@ model:
       params:
         freeze: true
         layer: "penultimate"
-        version: pretrained_models/CLIP-ViT-H-14-laion2B-s32B-b79K/open_clip_pytorch_model.bin
+        version: null
 
     img_cond_stage_config:
       target: lvdm.modules.encoders.condition.FrozenOpenCLIPImageEmbedderV2
       params:
         freeze: true
-        version: pretrained_models/CLIP-ViT-H-14-laion2B-s32B-b79K/open_clip_pytorch_model.bin
+        version: null
 
     image_proj_stage_config:
       target: lvdm.modules.encoders.resampler.Resampler

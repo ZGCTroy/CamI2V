@@ -13,6 +13,7 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 !!!!! Code is not complete and clean. Environment installer, training scripts, evaluation code and gradio demo are on the way. In addition, we implement camera control methods using code injected to lvdm, which is not easy for python beginners. We will reconstruct code in several weeks. !!!! 
 
+- [x]  :fire: 2024/12/16: Release 256x256 [checkpoints](https://huggingface.co/MuteApo/CamI2V/tree/main) of MotionCtrl and CameraCtrl on DynamiCrafter. CamI2V and higher resolution is on the way, please stay tuned!
 - [x]  :fire: 2024/12/09: Release training configs and scripts.
 - [x]  :fire: 2024/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
 - [x]  :fire: 2024/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
@@ -45,7 +46,7 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 | + Plucker Embedding (Baseline, CameraCtrl)            |   + 211 M    | 11.56 GiB  |     8.38 s      |
 | + Plucker Embedding + Epipolar Attention (Our CamI2V) |   + 261 M    | 11.67 GiB  |     10.3 s      |
 
-
+<!-- 
 ## :camera: Visualization
 
 ### 1024x576
@@ -64,7 +65,7 @@ Also see 512 resolution part of [https://zgctroy.github.io/CamI2V/](https://zgct
 
 ### 256x256
 
-See 256 resolution part of [https://zgctroy.github.io/CamI2V/](https://zgctroy.github.io/CamI2V/)
+See 256 resolution part of [https://zgctroy.github.io/CamI2V/](https://zgctroy.github.io/CamI2V/) -->
 
 
 ## :gear: Environment
@@ -80,21 +81,41 @@ conda install -y xformers -c xformers
 pip install -r requirements.txt
 ```
 
-### Download Pretrained Models
+## :dizzy: Inference
 
-Download [DynamiCrafter](https://huggingface.co/Doubiiu/DynamiCrafter) and [CLIP-ViT-H-14-laion2B-s32B-b79K](https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K), put under `pretrained_models` folder:
+### Download Checkpoints
+
+Currently we release checkpoints of DynamiCrafter-based MotionCtrl and CameraCtrl under 256x256 resolution on [Huggingface](https://huggingface.co/MuteApo/CamI2V/tree/main).
+CamI2V and higher resolution is on the way, please stay tuned!
+
+Download above checkpoints and put under `ckpts` folder.
+Please edit `ckpt_path` in `models.json` if you have a different model path.
+
+### Run Gradio Demo
 
 ```shell
-─┬─ pretrained_models\
- ├─── CLIP-ViT-H-14-laion2B-s32B-b79K\
- └─── DynamiCrafter\
+python cami2v_gradio_app.py
 ```
+
+Sometimes gradio may struggle to establish network connection, please try with `--use_host_ip`.
+
+## :rocket: Training
 
 ### Prepare Dataset
 
 Please follow instructions in [datasets](datasets) folder in this repo to download [RealEstate10K](https://google.github.io/realestate10k) dataset and pre-process necessary items like `video_clips` and `valid_metadata`.
 
-## :rocket: Training
+### Download Pretrained Models
+
+Download pretrained weights of base model [DynamiCrafter](https://huggingface.co/Doubiiu/DynamiCrafter) and put under `pretrained_models` folder:
+
+```shell
+─┬─ pretrained_models\
+ └─┬─ DynamiCrafter\
+   └─── model.ckpt
+```
+
+### Launch
 
 Start training by passing config yaml to `--base` argument of `main/trainer.py`. Example training configs are provided in `configs` folder.
 

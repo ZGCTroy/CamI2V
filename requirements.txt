@@ -16,7 +16,7 @@ omegaconf
 opencv_python
 pandas
 moviepy
-av
+av<14
 gradio
 timm
 kornia

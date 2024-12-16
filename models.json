@@ -1,37 +1,19 @@
 {
-    "512_cami2v": {
-        "config_file": "configs/training_512_cami2v/config_addPreNorm_finetunePoseEncoder+ProjectionLinear+HybridEpipolarAttn842+3DFullAttn1_randCondFrame.yaml",
-        "ckpt_path": "ckpts/512_cami2v.pt",
-        "width": 512,
-        "height": 320
-    },
-    "256_cami2v": {
-        "config_file": "configs/training_256_cami2v/config_pluckerEmbedding+HybridEpipolarAttn_randCondFrame.yaml",
-        "ckpt_path": "ckpts/256_cami2v.pt",
+    "256_DynamiCrafter": {
+        "config_file": "configs/000_dynamicrafter_256x256.yaml",
+        "ckpt_path": "pretrained_models/DynamiCrafter/model.ckpt",
         "width": 256,
         "height": 256
     },
-    "256_cami2v_3dfull": {
-        "config_file": "configs/training_256_cami2v/config_pluckerEmbedding+3DFullAttn_randCondFrame.yaml",
-        "ckpt_path": "ckpts/256_cami2v.pt",
-        "width": 256,
-        "height": 256
-    },
-    "256_camco": {
-        "config_file": "configs/training_256_cami2v/config_pluckerEmbedding+HybridEpipolarAttnOnlyOnCondFrame_randCondFrame.yaml",
-        "ckpt_path": "ckpts/256_camco.pt",
-        "width": 256,
-        "height": 256
-    },
-    "256_cameractrl": {
-        "config_file": "configs/training_256_cameractrl/config_finetunePoseEncoder+ProjectionLinear_fixedCondFrame.yaml",
-        "ckpt_path": "ckpts/256_cameractrl.pt",
-        "width": 256,
-        "height": 256
-    },
-    "256_motionctrl": {
-        "config_file": "configs/training_256_motionctrl_cmcm/config_finetuneProjectionLinear+Attn2OfTemporalTransformer_fixedCondFrame.yaml",
+    "256_MotionCtrl": {
+        "config_file": "configs/001_motionctrl_256x256.yaml",
         "ckpt_path": "ckpts/256_motionctrl.pt",
+        "width": 256,
+        "height": 256
+    },
+    "256_CameraCtrl": {
+        "config_file": "configs/002_cameractrl_256x256.yaml",
+        "ckpt_path": "ckpts/256_cameractrl.pt",
         "width": 256,
         "height": 256
     }
