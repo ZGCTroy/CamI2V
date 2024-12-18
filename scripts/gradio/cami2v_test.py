@@ -51,13 +51,17 @@ class Image2Video:
     def __init__(
         self,
         result_dir: str = "./gradio_results",
-        model_meta_file: str = "./models.json",
+        model_meta_path: str = "./configs/models.json",
+        camera_pose_meta_path: str = "./configs/camera_poses.json",
+        return_camera_trace: bool = True,
         video_length: int = 16,
         save_fps: int = 10,
         device: str = "cuda",
     ):
         self.result_dir = result_dir
-        self.model_meta_file = model_meta_file
+        self.model_meta_file = model_meta_path
+        self.camera_pose_meta_path = camera_pose_meta_path
+        self.return_camera_trace = return_camera_trace
         self.video_length = video_length
         self.save_fps = save_fps
         self.device = device
@@ -88,15 +92,15 @@ class Image2Video:
             p.requires_grad = False
 
         if ckpt_path:
-            state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+            state_dict = torch.load(ckpt_path, map_location="cpu")
             if "module" in state_dict:  # deepspeed checkpoint
                 state_dict = state_dict["module"]
             elif "state_dict" in state_dict:  # lightning checkpoint
                 state_dict = state_dict["state_dict"]
             state_dict = {k.replace("framestride_embed", "fps_embedding"): v for k, v in state_dict.items()}
             try:
-                model.load_state_dict(state_dict)
-                print("successfully loaded checkpoint {}".format(ckpt_path))
+                model.load_state_dict(state_dict, strict=True)
+                print(f"successfully loaded checkpoint {ckpt_path}")
             except Exception as e:
                 print(e)
                 model.load_state_dict(state_dict, strict=False)
@@ -112,18 +116,6 @@ class Image2Video:
         )
 
         return model, single_image_processor
-
-    def save_pcd(self, name: str, points: np.ndarray, colors: np.ndarray) -> tuple[str, str]:
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(points)
-        pcd.colors = o3d.utility.Vector3dVector(colors)
-        pcd.transform([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-
-        o3d.io.write_point_cloud(f"{self.result_dir}/{name}.ply", pcd)
-        mesh = o3d.io.read_triangle_mesh(f"{self.result_dir}/{name}.ply")
-        o3d.io.write_triangle_mesh(f"{self.result_dir}/{name}.obj", mesh)
-
-        return f"{self.result_dir}/{name}.obj"
 
     @torch.no_grad
     @torch.autocast("cuda", enabled=True)
@@ -149,7 +141,7 @@ class Image2Video:
         eta: float = 1.0,
         ref_img2: Image.Image = None,
     ):
-        with open("prompts/camera_pose_files/meta_data.json", "r", encoding="utf-8") as f:
+        with open(self.camera_pose_meta_path, "r", encoding="utf-8") as f:
             camera_pose_file_path = json.load(f)[camera_pose_type]
 
         camera_data = torch.from_numpy(np.loadtxt(camera_pose_file_path, comments="https"))  # t, -1
@@ -211,37 +203,46 @@ class Image2Video:
         log_images_kwargs["cond_frame_index"] = input["cond_frame_index"].clone()
 
         output = model.log_images(input, **log_images_kwargs)
-        video_clip = output["samples"].clamp(-1.0, 1.0).cpu()
+        video_clip = output["samples"].clamp(-1.0, 1.0).cpu()  # b, c, f, h, w
 
-        full_video = video_clip.clone()  # b, c, f, h, w
+        video_path = f"{self.result_dir}/{model_name}_{uuid4().fields[0]:x}.mp4"
+        self.save_video(video_clip, video_path)
+        return_list = [video_path]
 
+        if self.return_camera_trace:
+            points, colors = self.get_camera_trace(rel_c2ws_lerp_4x4[frame_indices, :3])
+            scene_with_camera_path = self.save_pcd("output_with_cam", points, colors)
+            return_list.append(scene_with_camera_path)
+
+        return return_list
+
+    def get_camera_trace(self, rel_c2ws: Tensor):
         points, colors = [], []
-        for frame_idx, rel_c2w in enumerate(rel_c2ws_lerp_4x4[frame_indices, :3]):
+        for frame_idx, rel_c2w in enumerate(rel_c2ws):
             right, up, forward, camera_center = rel_c2w.unbind(-1)
             start_point = camera_center
             end_point = camera_center + forward * 0.2
 
             camera, camera_colors = create_line_point_cloud(
-                start_point=start_point,
-                end_point=end_point,
-                num_points=200,
-                color=np.array([0, 1.0, 0]),
+                start_point, end_point, num_points=200, color=np.array([0, 1.0, 0])
             )
 
             points.append(camera)
             colors.append(camera_colors)
 
-        scene_with_camera_path = self.save_pcd(
-            "output_with_cam", np.concatenate(points, axis=0), np.concatenate(colors, axis=0)
-        )
+        return np.concatenate(points), np.concatenate(colors)
 
-        print(full_video.shape)
-        video_path = f"{self.result_dir}/{model_name}_{uuid4().fields[0]:x}.mp4"
-        self.save_video(full_video.clamp(-1.0, 1.0), video_path)
+    def save_pcd(self, name: str, points: np.ndarray, colors: np.ndarray) -> tuple[str, str]:
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(points)
+        pcd.colors = o3d.utility.Vector3dVector(colors)
+        pcd.transform([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
-        return_list = [scene_with_camera_path, video_path]
+        o3d.io.write_point_cloud(f"{self.result_dir}/{name}.ply", pcd)
+        mesh = o3d.io.read_triangle_mesh(f"{self.result_dir}/{name}.ply")
+        o3d.io.write_triangle_mesh(f"{self.result_dir}/{name}.obj", mesh)
 
-        return return_list
+        return f"{self.result_dir}/{name}.obj"
 
     def save_video(self, video: Tensor, path: str):
         n, c, t, h, w = video.shape

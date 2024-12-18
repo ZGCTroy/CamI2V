@@ -25,6 +25,8 @@ class CamI2V(CameraControlLVDM):
 
         self.epipolar_config = epipolar_config
         if self.epipolar_config is not None:
+            if not hasattr(self.epipolar_config, "is_3d_full_attn"):
+                self.epipolar_config.is_3d_full_attn = False
             if not hasattr(self.epipolar_config, "attention_resolution"):
                 self.epipolar_config.attention_resolution = [8, 4, 2, 1]
             if not hasattr(self.epipolar_config, "apply_epipolar_soft_mask"):
@@ -81,8 +83,6 @@ class CamI2V(CameraControlLVDM):
                             heads=_module.attn1.heads,
                             **self.epipolar_config
                         )
-
-                        self.is_3d_full_attn = epipolar.is_3d_full_attn
                         _module.add_module('epipolar', epipolar)
                         # _module.add_module('norm_epipolar', nn.LayerNorm(_module.attn1.to_k.in_features))
 
@@ -190,7 +190,7 @@ class CamI2V(CameraControlLVDM):
         return_kwargs = {}
 
         batch_size, num_frames, device, H, W = x.shape[0], x.shape[2], self.model.device, x.shape[3], x.shape[4]
-        with torch.no_grad(),  torch.autocast('cuda', enabled=False):
+        with torch.no_grad(), torch.autocast('cuda', enabled=False):
             camera_intrinsics_3x3 = super().get_input(batch, 'camera_intrinsics').float()  # b, t, 3, 3
             w2c_RT_4x4 = super().get_input(batch, 'RT').float()  # b, t, 4, 4
             c2w_RT_4x4 = w2c_RT_4x4.inverse()  # w2c --> c2w
@@ -199,7 +199,7 @@ class CamI2V(CameraControlLVDM):
             relative_c2w_RT_4x4 = self.get_relative_pose(c2w_RT_4x4, cond_frame_index, mode='left', normalize_T0=self.normalize_T0)  # b,t,4,4
             relative_c2w_RT_4x4[:, :, :3, 3] = relative_c2w_RT_4x4[:, :, :3, 3] * trace_scale_factor
 
-            if self.epipolar_config is not None and not self.is_3d_full_attn:
+            if self.epipolar_config is not None and not self.epipolar_config.is_3d_full_attn:
                 relative_c2w_RT_4x4_pairs = self.get_relative_c2w_RT_pairs(relative_c2w_RT_4x4)  # b,t,t,4,4
                 R = relative_c2w_RT_4x4_pairs[..., :3, :3]  # b,t,t,3,3
                 t = relative_c2w_RT_4x4_pairs[..., :3, 3:4]  # b,t,t,3,1
@@ -210,7 +210,7 @@ class CamI2V(CameraControlLVDM):
                 sample_locs_dict = None
 
         if self.pose_encoder is not None:
-            with torch.no_grad(),  torch.autocast('cuda', enabled=False):
+            with torch.no_grad(), torch.autocast('cuda', enabled=False):
                 pluker_embedding = self.ray_condition(camera_intrinsics_3x3, relative_c2w_RT_4x4, H, W, device, flip_flag=None)  # b, 6, t, H, W
 
             pluker_embedding_features = self.pose_encoder(pluker_embedding)  # bf c h w

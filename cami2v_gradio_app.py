@@ -10,22 +10,22 @@ from scripts.gradio.cami2v_test import Image2Video, bezier_curve
 
 
 def load_example():
-    key_order = ["input_image", "input_text", "camera_pose_type", "trace_extract_ratio", "frame_stride", "steps", "trace_scale_factor", "camera_cfg", "cfg_scale", "seed", "enable_camera_condition", "use_bezier_curve", "bezier_coef_a", "bezier_coef_b"]
-    with open("examples.json", "r") as f:
+    key_order = ["input_image", "input_text", "camera_pose_type", "trace_extract_ratio", "frame_stride", "steps", "trace_scale_factor", "camera_cfg", "cfg_scale", "seed", "enable_camera_condition"]
+    with open(args.example_meta_path, "r") as f:
         data = json.load(f)
 
     return [[example.get(x, None) for x in key_order] for example in data if example["enable"]]
 
 
 def load_model_name():
-    with open("models.json", "r") as f:
+    with open(args.model_meta_path, "r") as f:
         data = json.load(f)
 
     return list(filter(lambda x: "interp" not in x, data.keys()))
 
 
 def load_camera_pose_type():
-    with open("prompts/camera_pose_files/meta_data.json", "r") as f:
+    with open(args.camera_pose_meta_path, "r") as f:
         data = json.load(f)
 
     return list(data.keys())
@@ -36,15 +36,12 @@ def plot_bezier_curve(a: float, b: float):
     return pd.DataFrame({"x": results[0], "y": results[1]})
 
 
-max_seed = 2 ** 31
-
-
-def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
-    image2video = Image2Video(result_dir, device=device)
+def dynamicrafter_demo(result_dir, model_meta_path, camera_pose_meta_path, device="cuda"):
+    image2video = Image2Video(result_dir, model_meta_path, camera_pose_meta_path, device=device)
 
     with gr.Blocks(analytics_enabled=False, css=r"""
-        #input_img {height: 320px !important;}
-        #output_vid {width: auto !important; height: auto !important;}
+        #input_img img {height: 320px !important;}
+        #output_vid video {height: 256px !important; margin: auto !important;}
     """) as dynamicrafter_iface:
         gr.Markdown("""
             <div align='center'>
@@ -63,7 +60,7 @@ def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
 
         with gr.Row():
             end_btn = gr.Button("Generate")
-            reload_btn = gr.Button("Reload Examples & Camera Pose Types", elem_id="reload_button")
+            reload_btn = gr.Button("Reload", elem_id="reload_button")
 
         with gr.Row():
             input_text = gr.Text(label='Prompts')
@@ -73,7 +70,7 @@ def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
                 model_name = gr.Dropdown(label='Model Name', elem_id="model_name", choices=load_model_name())
                 camera_pose_type = gr.Dropdown(label='Camera Pose Type', elem_id="camera_pose_type", choices=load_camera_pose_type())
                 enable_camera_condition = gr.Checkbox(label='Enable Camera Condition', elem_id="enable_camera_condition", value=True)
-                trace_extract_ratio = gr.Slider(minimum=0, maximum=1.0, step=0.1, elem_id="trace_extract_ratio", label="Trace Extract Ratio", value=1.0)
+                trace_extract_ratio = gr.Slider(minimum=0, maximum=1.0, step=0.1, elem_id="trace_extract_ratio", label="Trace Extract Ratio", value=0.5)
                 trace_scale_factor = gr.Slider(minimum=0, maximum=20, step=0.1, elem_id="trace_scale_factor", label="Camera Trace Scale Factor", value=1.0)
 
             with gr.Column():
@@ -81,11 +78,10 @@ def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
                 cfg_scale = gr.Slider(minimum=1.0, maximum=15.0, step=0.5, label='CFG Scale', value=6, elem_id="cfg_scale")
                 frame_stride = gr.Slider(minimum=1, maximum=10, step=1, label='Frame Stride', value=5, elem_id="frame_stride")
                 steps = gr.Slider(minimum=1, maximum=60, step=1, elem_id="steps", label="Sampling Steps (DDPM)", value=25)
-                seed = gr.Slider(label='Random Seed', minimum=0, maximum=max_seed, step=1, value=12333)
+                seed = gr.Slider(label="Random Seed", minimum=0, maximum=2**31, step=1, value=12333)
 
-            with gr.Column():
-                with gr.Row():
-                    use_bezier_curve = gr.Checkbox(label='Use Bézier Curve', elem_id="use_bezier_curve", value=False)
+            with gr.Column(visible=False):
+                use_bezier_curve = gr.Checkbox(label='Use Bézier Curve', elem_id="use_bezier_curve", value=False)
                 with gr.Row():
                     bezier_coef_a = gr.Slider(minimum=0.0, maximum=1.0, step=0.1, elem_id="bezier_coef_a", label="Coefficient A", value=0.5)
                     bezier_coef_b = gr.Slider(minimum=0.0, maximum=1.0, step=0.1, elem_id="bezier_coef_a", label="Coefficient B", value=0.5)
@@ -93,14 +89,14 @@ def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
 
         gr_examples = gr.Examples(
             examples=load_example(),
-            inputs=[input_image, input_text, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition, use_bezier_curve, bezier_coef_a, bezier_coef_b],
-            # outputs=[output_3d, output_video],
+            inputs=[input_image, input_text, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
+            outputs=[output_video1, output_3d],
             fn=image2video.get_image,
             examples_per_page=-1,
         )
         end_btn.click(
-            inputs=[model_name, input_image, input_text, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition, use_bezier_curve, bezier_coef_a, bezier_coef_b],
-            outputs=[output_3d, output_video1],
+            inputs=[model_name, input_image, input_text, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
+            outputs=[output_video1, output_3d],
             fn=image2video.get_image
         )
         reload_btn.click(
@@ -118,6 +114,10 @@ def dynamicrafter_demo(result_dir='./tmp', device="cuda"):
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--result_dir", type=str, default="./gradio_results")
+    parser.add_argument("--model_meta_path", type=str, default="./configs/models.json")
+    parser.add_argument("--example_meta_path", type=str, default="./configs/examples.json")
+    parser.add_argument("--camera_pose_meta_path", type=str, default="./configs/camera_poses.json")
     parser.add_argument("--use_host_ip", action="store_true")
 
     return parser
@@ -136,6 +136,6 @@ if __name__ == "__main__":
     parser = get_parser()
     args = parser.parse_args()
 
-    dynamicrafter_iface = dynamicrafter_demo('./gradio_results', args.device)
+    dynamicrafter_iface = dynamicrafter_demo(args.result_dir, args.model_meta_path, args.camera_pose_meta_path, args.device)
     dynamicrafter_iface.queue(max_size=12)
     dynamicrafter_iface.launch(max_threads=10, server_name=get_ip_addr() if args.use_host_ip else None)

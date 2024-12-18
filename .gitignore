@@ -162,5 +162,6 @@ cython_debug/
 ckpts/*.pt
 datasets/RealEstate10K/
 gradio_results/
+internal/
 logs/
 pretrained_models/
