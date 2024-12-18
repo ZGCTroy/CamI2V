@@ -327,7 +327,7 @@ class CameraPoseEncoder(nn.Module):
                     out_dim = int(channels[i] / compression_factor)
                     conv_layer = ResnetBlock(in_dim, out_dim, down=False, ksize=ksize, sk=sk, use_conv=use_conv)
                 elif j == nums_rb - 1:
-                    in_dim = channels[i] / compression_factor
+                    in_dim = int(channels[i] / compression_factor)
                     out_dim = channels[i]
                     conv_layer = ResnetBlock(in_dim, out_dim, down=False, ksize=ksize, sk=sk, use_conv=use_conv)
                 else:

@@ -10,7 +10,7 @@ from scripts.gradio.cami2v_test import Image2Video, bezier_curve
 
 
 def load_example():
-    key_order = ["input_image", "input_text", "camera_pose_type", "trace_extract_ratio", "frame_stride", "steps", "trace_scale_factor", "camera_cfg", "cfg_scale", "seed", "enable_camera_condition"]
+    key_order = ["input_image", "input_text", "camera_pose_type", "trace_extract_ratio", "steps", "trace_scale_factor", "camera_cfg", "cfg_scale", "seed", "enable_camera_condition"]
     with open(args.example_meta_path, "r") as f:
         data = json.load(f)
 
@@ -69,14 +69,13 @@ def dynamicrafter_demo(result_dir, model_meta_path, camera_pose_meta_path, devic
             with gr.Column():
                 model_name = gr.Dropdown(label='Model Name', elem_id="model_name", choices=load_model_name())
                 camera_pose_type = gr.Dropdown(label='Camera Pose Type', elem_id="camera_pose_type", choices=load_camera_pose_type())
-                enable_camera_condition = gr.Checkbox(label='Enable Camera Condition', elem_id="enable_camera_condition", value=True)
                 trace_extract_ratio = gr.Slider(minimum=0, maximum=1.0, step=0.1, elem_id="trace_extract_ratio", label="Trace Extract Ratio", value=0.5)
                 trace_scale_factor = gr.Slider(minimum=0, maximum=20, step=0.1, elem_id="trace_scale_factor", label="Camera Trace Scale Factor", value=1.0)
 
             with gr.Column():
+                enable_camera_condition = gr.Checkbox(label='Enable Camera Condition', elem_id="enable_camera_condition", value=True)
                 camera_cfg = gr.Slider(minimum=1.0, maximum=4.0, step=0.1, elem_id="Camera CFG", label="Camera CFG", value=1.0)
                 cfg_scale = gr.Slider(minimum=1.0, maximum=15.0, step=0.5, label='CFG Scale', value=6, elem_id="cfg_scale")
-                frame_stride = gr.Slider(minimum=1, maximum=10, step=1, label='Frame Stride', value=5, elem_id="frame_stride")
                 steps = gr.Slider(minimum=1, maximum=60, step=1, elem_id="steps", label="Sampling Steps (DDPM)", value=25)
                 seed = gr.Slider(label="Random Seed", minimum=0, maximum=2**31, step=1, value=12333)
 
@@ -89,13 +88,13 @@ def dynamicrafter_demo(result_dir, model_meta_path, camera_pose_meta_path, devic
 
         gr_examples = gr.Examples(
             examples=load_example(),
-            inputs=[input_image, input_text, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
+            inputs=[input_image, input_text, camera_pose_type, trace_extract_ratio, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
             outputs=[output_video1, output_3d],
             fn=image2video.get_image,
             examples_per_page=-1,
         )
         end_btn.click(
-            inputs=[model_name, input_image, input_text, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
+            inputs=[model_name, input_image, input_text, camera_pose_type, trace_extract_ratio, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
             outputs=[output_video1, output_3d],
             fn=image2video.get_image
         )
@@ -138,4 +137,4 @@ if __name__ == "__main__":
 
     dynamicrafter_iface = dynamicrafter_demo(args.result_dir, args.model_meta_path, args.camera_pose_meta_path, args.device)
     dynamicrafter_iface.queue(max_size=12)
-    dynamicrafter_iface.launch(max_threads=10, server_name=get_ip_addr() if args.use_host_ip else None)
+    dynamicrafter_iface.launch(max_threads=10, server_name=get_ip_addr() if args.use_host_ip else None, allowed_paths=["internal/prompts"])

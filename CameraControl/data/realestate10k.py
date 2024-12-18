@@ -9,29 +9,6 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-def make_spatial_transformations(resolution, type, ori_resolution=None):
-    """
-    resolution: target resolution, a list of int, [h, w]
-    """
-    if type == "random_crop":
-        transformations = transforms.RandomCropss(resolution)
-    elif type == "resize_center_crop":
-        is_square = (resolution[0] == resolution[1])
-        if is_square:
-            transformations = transforms.Compose([
-                transforms.Resize(resolution[0], antialias=True),
-                transforms.CenterCrop(resolution[0]),
-            ])
-        else:
-            transformations = transforms.Compose([
-                transforms.Resize(min(resolution)),
-                transforms.CenterCrop(resolution),
-            ])
-    else:
-        raise NotImplementedError
-    return transformations
-
-
 class RealEstate10K(Dataset):
     """
     RealEstate10K Dataset.
@@ -66,7 +43,7 @@ class RealEstate10K(Dataset):
                  per_frame_scale_path=None,
                  camera_pose_sections=1,
                  video_length=16,
-                 resolution=[256, 256],
+                 resolution=[256, 256],  # H, W
                  frame_stride=1,  # [min, max], do not larger than 32 when video_length=16
                  frame_stride_for_condition=0,
                  invert_video=False,
@@ -83,6 +60,8 @@ class RealEstate10K(Dataset):
         self.frame_stride_for_condition = frame_stride_for_condition
         self.frame_stride = frame_stride
         self.spatial_transform_type = spatial_transform
+        assert self.spatial_transform_type in ['resize_center_crop']
+
         self.count_globalsteps = count_globalsteps
         self.bs_per_gpu = bs_per_gpu
         self.invert_video = invert_video
@@ -94,36 +73,49 @@ class RealEstate10K(Dataset):
         with open(meta_list, 'r') as f:
             # self.metadata = [line.strip() for line in f.readlines()]
             self.metadata = np.array([line.strip() for line in f.readlines()], dtype=np.string_)
-        
+
         if per_frame_scale_path:
             self.per_frame_scale = np.load(per_frame_scale_path, allow_pickle=True)['arr_0'].item()
 
-        # make saptial transformations
-        if isinstance(self.resolution[0], int):
-            self.num_resolutions = 1
-            self.spatial_transform = make_spatial_transformations(self.resolution, type=self.spatial_transform_type) \
-                if self.spatial_transform_type is not None else None
-        else:
-            # multiple resolutions training
-            assert (isinstance(self.resolution[0], list) or isinstance(self.resolution[0], omegaconf.listconfig.ListConfig))
-            self.num_resolutions = len(resolution)
-            self.spatial_transform = None
-            if self.num_resolutions > 1:
-                assert (self.count_globalsteps)
-        if self.count_globalsteps:
-            assert (bs_per_gpu is not None)
-            self.counter = 0
-
         print(f'============= length of dataset {len(self.metadata)} =============')
 
-    def __getitem__(self, index):
-        ## set up for dynamic resolution training
-        if self.count_globalsteps:
-            self.counter += 1
-            self.global_step = self.counter // self.bs_per_gpu
+    def _resize_for_rectangle_crop(self, frames, H, W, fx, fy, cx, cy):
+        '''
+        :param frames: C,F,H,W
+        :param image_size: H,W
+        :return: frames: C,F,crop_H,crop_W;  camera_intrinsics: F,3,3
+        '''
+        ori_H, ori_W = frames.shape[-2:]
+        if ori_W / ori_H > W / H:
+            frames = transforms.functional.resize(
+                frames,
+                size=[H, int(ori_W * H / ori_H)],
+            )
         else:
-            self.global_step = None
+            frames = transforms.functional.resize(
+                frames,
+                size=[int(ori_H * W / ori_W), W],
+            )
 
+        resized_H, resized_W = frames.shape[2], frames.shape[3]
+        frames = frames.squeeze(0)
+
+        delta_H = resized_H - H
+        delta_W = resized_W - W
+
+        top, left = delta_H // 2, delta_W // 2
+        frames = transforms.functional.crop(frames, top=top, left=left, height=H, width=W)
+
+        fx = fx * resized_W
+        fy = fy * resized_H
+        cx = cx * W
+        cy = cy * H
+        _1, _0 = torch.ones_like(fx), torch.zeros_like(fx)
+        camera_intrinsics = torch.hstack([fx, _0, cx, _0, fy, cy, _0, _0, _1]).reshape(-1, 3, 3)  # [F, 3, 3]
+
+        return frames, camera_intrinsics, resized_H, resized_W
+
+    def __getitem__(self, index):
         to_inverse = (self.invert_video and random.random() > 0.5)
 
         ## get frames until success
@@ -166,14 +158,13 @@ class RealEstate10K(Dataset):
                     required_frame_num = frame_stride * (self.video_length - 1) + 1
             break
 
-            ## select a random clip
+        ## select a random clip
         random_range = frame_num - required_frame_num
         start_idx = random.randint(0, random_range) if random_range > 0 else 0
         frame_indices = [start_idx + frame_stride * i for i in range(self.video_length)]
-        # camera_pose_str, camera_pose, camera_intrinsics = "", [], []
 
-        camera_data = torch.from_numpy(np.loadtxt(lines))[frame_indices].float() # [t, ]
-        fx, fy, cx, cy = camera_data[:, 1:5].chunk(4, dim=-1) # [t,4]
+        camera_data = torch.from_numpy(np.loadtxt(lines))[frame_indices].float()  # [t, ]
+        fx, fy, cx, cy = camera_data[:, 1:5].chunk(4, dim=-1)  # [t,4]
         camera_pose_3x4 = camera_data[:, 7:].reshape(-1, 3, 4)  # [t, 3, 4]
         camera_pose_4x4 = torch.cat([camera_pose_3x4, torch.tensor([[[0.0, 0.0, 0.0, 1.0]]] * len(frame_indices))], dim=1)  # [t, 4, 4]
 
@@ -184,53 +175,33 @@ class RealEstate10K(Dataset):
         assert (frames.shape[0] == self.video_length), f'{len(frames)}, self.video_length={self.video_length}'
         frames = torch.from_numpy(frames.asnumpy()).permute(3, 0, 1, 2).float()  # [t,h,w,c] -> [c,t,h,w]
 
-        if self.num_resolutions > 1:
-            ## make transformations based on the current resolution
-            res_idx = self.global_step % 3
-            res_curr = self.resolution[res_idx]
-            self.spatial_transform = make_spatial_transformations(res_curr,
-                                                                  self.spatial_transform_type,
-                                                                  ori_resolution=frames.shape[2:])
-
         ## spatial transformations
-        if self.spatial_transform is not None:
-            if self.spatial_transform_type == 'resize_center_crop':
-                ori_H, ori_W = frames.shape[-2:]
-                sample_H, sample_W = self.resolution[0], self.resolution[1]
-                if sample_H <= sample_W:
-                    scale = sample_H / ori_H
-                else:
-                    scale = sample_W / ori_W
-                fx *= ori_W * scale
-                fy *= ori_H * scale
-                cx *= sample_W
-                cy *= sample_H
-
-            frames = self.spatial_transform(frames)
+        if self.spatial_transform_type == 'resize_center_crop':
+            frames, camera_intrinsics, resized_H, resized_W = self._resize_for_rectangle_crop(
+                frames,
+                self.resolution[0], self.resolution[1],  # H, W
+                fx, fy, cx, cy
+            )
 
         if self.resolution is not None:
-            if self.num_resolutions > 1:
-                assert (frames.shape[2] == res_curr[0] and frames.shape[3] == res_curr[1]), f'frames={frames.shape}, res_curr={res_curr}'
-            else:
-                assert (frames.shape[2] == self.resolution[0] and frames.shape[3] == self.resolution[1]), f'frames={frames.shape}, self.resolution={self.resolution}'
+            assert (frames.shape[2] == self.resolution[0] and frames.shape[3] == self.resolution[1]), f'frames={frames.shape}, self.resolution={self.resolution}'
+
         frames = (frames / 255 - 0.5) * 2
         fps_clip = fps_ori // frame_stride
+
         if to_inverse:
             # inverse frame order in dim=1
             frames = frames.flip(dims=(1,))
 
-        _1, _0 = torch.ones_like(fx), torch.zeros_like(fx)
-        camera_intrinsics = torch.hstack([fx, _0, cx, _0, fy, cy, _0, _0, _1]).reshape(-1, 3, 3) # [t, 3, 3]
-
         data = {
-            'video': frames,    # [c,t,h,w]
+            'video': frames,  # [c,t,h,w]
             'caption': caption,
             'video_path': video_path,
             'fps': fps_clip,
             'frame_stride': frame_stride if self.frame_stride_for_condition == 0 else self.frame_stride_for_condition,
             'RT': camera_pose_4x4,  # Tx4x4
             'camera_data': camera_data,
-            'camera_intrinsics': camera_intrinsics, # Tx3x3
+            'camera_intrinsics': camera_intrinsics,  # Tx3x3
             # 'trajs': torch.zeros(2, self.video_length, frames.shape[2], frames.shape[3])
         }
 

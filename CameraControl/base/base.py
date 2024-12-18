@@ -357,6 +357,9 @@ class CameraControlLVDM(DynamiCrafter):
                     uc_prompt = self.get_learned_conditioning(prompts)
                 elif self.uncond_type == "zero_embed":
                     uc_prompt = torch.zeros_like(c_emb)
+                elif self.uncond_type == "negative_prompt":
+                    prompts = N * [kwargs["negative_prompt"]]
+                    uc_prompt = self.get_learned_conditioning(prompts)
 
                 img = torch.zeros_like(xrec[:, :, 0])  ## b c h w
                 ## img: b c h w

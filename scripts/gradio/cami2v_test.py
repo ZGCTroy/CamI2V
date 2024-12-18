@@ -106,6 +106,7 @@ class Image2Video:
                 model.load_state_dict(state_dict, strict=False)
 
         model = model.to(self.device)
+        model.uncond_type = "negative_prompt"
         # print("model dtype", model.dtype)
 
         single_image_processor = SingleImageForInference(
@@ -126,7 +127,6 @@ class Image2Video:
         caption: str,
         camera_pose_type: str,
         trace_extract_ratio: float = 1.0,
-        frame_stride: int = 1,
         steps: int = 25,
         trace_scale_factor: float = 1.0,
         camera_cfg: float = 1.0,
@@ -136,6 +136,7 @@ class Image2Video:
         use_bezier_curve: bool = False,
         bezier_coef_a: float = None,
         bezier_coef_b: float = None,
+        frame_stride: int = 1,
         loop: bool = False,
         cond_frame_index: int = 0,
         eta: float = 1.0,
@@ -190,6 +191,7 @@ class Image2Video:
             "enable_camera_condition": enable_camera_condition,
             "trace_scale_factor": trace_scale_factor,
             "result_dir": self.result_dir,
+            "negative_prompt": "fast movement, jittery motion, abrupt transitions, distorted body, missing limbs, unnatural posture, blurry, bad anatomy, deformed, glitchy motion, artifacts."
         }
 
         frame_indices = list(range(0, self.video_length))

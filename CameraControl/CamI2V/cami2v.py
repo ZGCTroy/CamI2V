@@ -43,6 +43,8 @@ class CamI2V(CameraControlLVDM):
                 self.epipolar_config.current_frame_as_register_token = False
             if not hasattr(self.epipolar_config, "pluker_add_type"):
                 self.epipolar_config.pluker_add_type = "add_to_pre_x_only"
+            if not hasattr(self.epipolar_config, "add_small_perturbation_on_zero_T"):
+                self.epipolar_config.add_small_perturbation_on_zero_T = False
 
         bound_method = new_forward_for_unet.__get__(
             self.model.diffusion_model,
@@ -185,6 +187,13 @@ class CamI2V(CameraControlLVDM):
 
         return rearrange(mask, "B T1 T2 HW1 HW2 -> B (T1 HW1) (T2 HW2)")
 
+    def add_small_perturbation(self, t, epsilon=1e-6):
+        zero_mask = (t.abs() < epsilon).all(dim=-2, keepdim=True)  # 检查 T 的 x, y, z 是否都接近 0
+        perturbation = torch.randn_like(t) * epsilon  # 生成微小扰动
+        t = torch.where(zero_mask, perturbation, t)  # 如果 T 为零，替换为扰动，否则保持原值
+
+        return t
+
     def get_batch_input_camera_condition_process(self, batch, x, cond_frame_index, trace_scale_factor, rand_cond_frame, *args, **kwargs):
         return_log = {}
         return_kwargs = {}
@@ -203,6 +212,10 @@ class CamI2V(CameraControlLVDM):
                 relative_c2w_RT_4x4_pairs = self.get_relative_c2w_RT_pairs(relative_c2w_RT_4x4)  # b,t,t,4,4
                 R = relative_c2w_RT_4x4_pairs[..., :3, :3]  # b,t,t,3,3
                 t = relative_c2w_RT_4x4_pairs[..., :3, 3:4]  # b,t,t,3,1
+
+                if self.epipolar_config.add_small_perturbation_on_zero_T:
+                    t = self.add_small_perturbation(t, epsilon=1e-6)
+
                 K = camera_intrinsics_3x3.unsqueeze(1)
                 F = self.get_fundamental_matrix(K, R, t)
                 sample_locs_dict = {d: self.get_epipolar_mask(F, T, H // d, W // d, d) for d in [int(8 * ds) for ds in self.epipolar_config.attention_resolution]}

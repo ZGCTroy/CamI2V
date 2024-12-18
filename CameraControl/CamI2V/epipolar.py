@@ -126,10 +126,6 @@ class Epipolar(nn.Module):
         nn.init.zeros_(list(self.epipolar_attn.to_out[0].parameters())[1])
 
     def forward(self, features: Tensor, sample_locs_dict: dict[int, Tensor] = None, cond_frame_index=None, **kwargs):
-        # return checkpoint.checkpoint(self._forward, features, sample_locs_dict, use_reentrant=False)
-        return self._forward(features, sample_locs_dict, cond_frame_index, **kwargs)
-
-    def _forward(self, features: Tensor, sample_locs_dict: dict[int, Tensor] = None, cond_frame_index=None, **kwargs):
         """
         Args:
             features: B x T x C x H x W

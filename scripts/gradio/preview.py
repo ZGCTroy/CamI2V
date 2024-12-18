@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import imageio
 import numpy as np
 import open3d as o3d
+from pyvirtualdisplay import Display
 from tqdm import tqdm
 
 def select_visible_points(point_cloud, viewpoint):
@@ -38,6 +39,9 @@ def render(
     size: tuple[int, int], intrinsics: np.ndarray, w2cs: np.ndarray, points: np.ndarray, colors: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
 
+    display = Display(visible=0, size=(512, 320))
+    display.start()
+
     renderer = o3d.visualization.rendering.OffscreenRenderer(*size)
 
     K = o3d.camera.PinholeCameraIntrinsic(*size, intrinsics)
@@ -72,70 +76,15 @@ def render(
 
         rgb_frames.append(renderer.render_to_image())
 
+    display.stop()
+
     return np.stack(rgb_frames)
 
 
-# def render_with_depth(
-#     size: tuple[int, int], intrinsics: np.ndarray, w2cs: np.ndarray, points: np.ndarray, colors: np.ndarray
-# ) -> tuple[np.ndarray, np.ndarray]:
-#
-#     renderer = o3d.visualization.rendering.OffscreenRenderer(*size)
-#
-#     K = o3d.camera.PinholeCameraIntrinsic(*size, intrinsics)
-#
-#     pcd = o3d.geometry.PointCloud()
-#     pcd.points = o3d.utility.Vector3dVector(points)
-#     pcd.colors = o3d.utility.Vector3dVector(colors)
-#
-#     mat = o3d.visualization.rendering.MaterialRecord()
-#     mat.shader = "defaultUnlit"
-#     # mat.point_size = 3
-#
-#     scene: o3d.visualization.rendering.Open3DScene = renderer.scene
-#     scene.set_background(np.array([0.0, 0.0, 0.0, 1.0]))
-#     scene.view.set_post_processing(False)
-#     scene.clear_geometry()
-#     scene.add_geometry("point cloud", pcd, mat)
-#
-#     rgb_frames, depth_frames = [], []
-#     for w2c in tqdm(w2cs, desc="Rendering previews"):
-#         renderer.setup_camera(K, w2c)
-#         rgb_frames.append(renderer.render_to_image())
-#         depth_frames.append(renderer.render_to_depth_image(z_in_view_space=True))
-#
-#     return np.stack(rgb_frames), np.where(np.stack(depth_frames) == np.inf, 0.0, 1.0)
-#
-#
-# def render_from_npz(data_path: str, output_path: str):
-#     data = np.load(data_path, allow_pickle=True)["arr_0"].item()
-#
-#     renderer = o3d.visualization.rendering.OffscreenRenderer(*data["size"])
-#
-#     K = o3d.camera.PinholeCameraIntrinsic(*data["size"], data["K"])
-#
-#     pcd = o3d.geometry.PointCloud()
-#     pcd.points = o3d.utility.Vector3dVector(data["points"])
-#     pcd.colors = o3d.utility.Vector3dVector(data["colors"])
-#
-#     mat = o3d.visualization.rendering.MaterialRecord()
-#     mat.shader = "defaultUnlit"
-#     # mat.point_size = 3
-#
-#     scene: o3d.visualization.rendering.Open3DScene = renderer.scene
-#     scene.set_background(np.array([0.0, 0.0, 0.0, 1.0]))
-#     scene.view.set_post_processing(False)
-#     scene.clear_geometry()
-#     scene.add_geometry("point cloud", pcd, mat)
-#
-#     rgb_frames, depth_frames = [], []
-#     for w2c in tqdm(data["w2cs"], desc="Rendering previews"):
-#         renderer.setup_camera(K, w2c)
-#         rgb_frames.append(renderer.render_to_image())
-#         depth_frames.append(renderer.render_to_depth_image(z_in_view_space=True))
-#
-#     imageio.mimsave(output_path, np.stack(rgb_frames), fps=8)
-#     imageio.mimsave("test.mp4", np.where(np.stack(depth_frames) == np.inf, 0, 255).astype(np.uint8), fps=8)
-
-
 if __name__ == "__main__":
+    display = Display(visible=0, size=(512, 320))
+    display.start()
+
     o3d.visualization.rendering.OffscreenRenderer(512, 320) # test
+
+    display.stop()

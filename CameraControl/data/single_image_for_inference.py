@@ -46,10 +46,36 @@ class SingleImageForInference():
         self.resolution = resolution
         self.device= device
         self.spatial_transform_type = spatial_transform_type
-        if spatial_transform_type is not None:
-            self.spatial_transform = make_spatial_transformations(self.resolution, type=self.spatial_transform_type)
+        assert self.spatial_transform_type in ['resize_center_crop']
+
+    def _resize_for_rectangle_crop(self, frames, H, W):
+        '''
+        :param frames: C,F,H,W
+        :param image_size: H,W
+        :return: frames: C,F,crop_H,crop_W;  camera_intrinsics: F,3,3
+        '''
+        ori_H, ori_W = frames.shape[-2:]
+        if ori_W / ori_H > W / H:
+            frames = transforms.functional.resize(
+                frames,
+                size=[H, int(ori_W * H / ori_H)],
+            )
         else:
-            self.spatial_transform = None
+            frames = transforms.functional.resize(
+                frames,
+                size=[int(ori_H * W / ori_W), W],
+            )
+
+        resized_H, resized_W = frames.shape[2], frames.shape[3]
+        frames = frames.squeeze(0)
+
+        delta_H = resized_H - H
+        delta_W = resized_W - W
+
+        top, left = delta_H // 2, delta_W // 2
+        frames = transforms.functional.crop(frames, top=top, left=left, height=H, width=W)
+
+        return frames, resized_H, resized_W
 
     def get_batch_input(self, ref_img, caption, camera_pose_3x4, frame_stride=1, fps=29.97, ref_img2=None):
         '''
@@ -59,44 +85,31 @@ class SingleImageForInference():
         :return:
         '''
 
-        # ref_img = rearrange(torch.from_numpy(np.array(Image.open(ref_img_path).convert("RGB"))), "h w c -> c 1 h w")
         ref_img = rearrange(torch.from_numpy(ref_img), 'h w c -> c 1 h w').to(self.device)
-        if ref_img2 is not None:
-            ref_img2 = rearrange(torch.from_numpy(ref_img2), 'h w c -> c 1 h w').to(self.device)
-        ori_H, ori_W = ref_img.shape[-2:]
-        resized_ref_img = self.spatial_transform.transforms[0](ref_img)
-        resized_H, resized_W = resized_ref_img.shape[-2:]
-        ref_img = self.spatial_transform.transforms[1](resized_ref_img)
+        ref_img, resized_H, resized_W = self._resize_for_rectangle_crop(
+            ref_img,
+            self.resolution[0], self.resolution[1],  # H, W
+        )
         ref_img = (ref_img / 255 - 0.5) * 2
         ref_img = repeat(ref_img, "c 1 h w -> c f h w", f=self.video_length).clone()
+
         if ref_img2 is not None:
-            resized_ref_img2 = self.spatial_transform.transforms[0](ref_img2)
-            resized_H2, resized_W2 = resized_ref_img2.shape[-2:]
-            ref_img2 = self.spatial_transform.transforms[1](resized_ref_img2)
+            ref_img2 = rearrange(torch.from_numpy(ref_img2), 'h w c -> c 1 h w').to(self.device)
+            ref_img2, resized_H2, resized_W2 = self._resize_for_rectangle_crop(
+                ref_img2,
+                self.resolution[0], self.resolution[1],  # H, W
+            )
             ref_img2 = (ref_img2 / 255 - 0.5) * 2
-            ref_img[:,-1:,:,:]  = ref_img2.clone()
-            print((ref_img[:,0,:,:] == ref_img[:,-1,:,:]).all())
+            ref_img[:, -1:, :, :] = ref_img2.clone()
         else:
-            resized_W2, resized_H2 = resized_W, resized_H
+            resized_H2, resized_W2 = resized_H, resized_W
 
         camera_pose_4x4 = rt34_to_44(camera_pose_3x4).to(device=self.device)  # (t,3,4) --> (t,4,4)
 
-        fx = 0.5 * max(ori_H, ori_W) / ori_W
-        fy = 0.5 * max(ori_H, ori_W) / ori_H
-        cx = 0.5
-        cy = 0.5
-
-        if self.spatial_transform_type == 'resize_center_crop':
-            sample_H, sample_W = self.resolution[0], self.resolution[1]
-            if sample_H <= sample_W:
-                scale = sample_H / ori_H
-            else:
-                scale = sample_W / ori_W
-            fx *= ori_W * scale
-            fy *= ori_H * scale
-            cx *= sample_W
-            cy *= sample_H
-
+        fx = 0.5 * resized_W
+        fy = 0.5 * resized_H
+        cx = 0.5 * self.resolution[1]
+        cy = 0.5 * self.resolution[0]
         camera_intrinsics = torch.tensor([fx, 0, cx, 0, fy, cy, 0, 0, 1.0], device=self.device).reshape(1, 1, 3, 3).repeat(1, self.video_length, 1, 1)
 
         data = {
