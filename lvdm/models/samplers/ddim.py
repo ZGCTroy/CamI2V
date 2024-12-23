@@ -187,16 +187,16 @@ class DDIMSampler(object):
                     ts,
                 )
 
-            if "paste_3d_scene" in kwargs and kwargs['paste_3d_scene'] and step >= kwargs['paste_3d_scene_steps']:
-                print(i, step, 'paste 3d scene')
+            if "noise_shaping" in kwargs and kwargs['noise_shaping'] and step >= kwargs['noise_shaping_minimum_timesteps']:
+                print(i, step, 'apply scene-constrained noise shaping')
                 img = img.clone()
                 img_orig = self.model.q_sample(
-                    kwargs["paste_3d_scene_frames"] if "paste_3d_scene_frames" in kwargs else cond["origin_z_0"],  # b,c,t,h,w
+                    kwargs["scene_frames"] if "scene_frames" in kwargs else cond["origin_z_0"],  # b,c,t,h,w
                     ts,
                 )
-                paste_3d_scene_mask = kwargs['paste_3d_scene_mask']
+                scene_mask = kwargs['scene_mask']
                 ratio = 1.0
-                img = img_orig * paste_3d_scene_mask * ratio + (1. - paste_3d_scene_mask * ratio) * img
+                img = img_orig * scene_mask * ratio + (1. - scene_mask * ratio) * img
 
 
 

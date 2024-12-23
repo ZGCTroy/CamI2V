@@ -2,7 +2,7 @@ model:
   pretrained_checkpoint: pretrained_models/DynamiCrafter/model.ckpt
   base_learning_rate: 1e-4
   scale_lr: false
-  target: CameraControl.cameractrl.cameractrl.CameraCtrl
+  target: CameraControl.CamI2V.cami2v.CamI2V
   params:
     diffusion_model_trainable_param_list: ['']
     rescale_betas_zero_snr: false
@@ -25,7 +25,7 @@ model:
     use_ema: false
     uncond_prob: 0.05
     uncond_type: 'empty_seq'
-    rand_cond_frame: false
+    rand_cond_frame: true
     use_dynamic_rescale: false
     base_scale: 1.0
     fps_condition_type: 'fs'
@@ -92,7 +92,7 @@ model:
       target: lvdm.modules.encoders.condition.FrozenOpenCLIPEmbedder
       params:
         freeze: true
-        layer: "penultimate"
+        layer: penultimate
         version: null
 
     img_cond_stage_config:
@@ -114,8 +114,9 @@ model:
         ff_mult: 4
         video_length: 16
 
+    add_type: add_to_main_branch
     pose_encoder_config:
-      target: CameraControl.cameractrl.camera_pose_encoder.CameraPoseEncoder
+      target: CameraControl.CamI2V.camera_pose_encoder.CameraPoseEncoder
       params:
         downscale_factor: 8
         channels: [ 320, 640, 1280, 1280 ]
@@ -129,6 +130,15 @@ model:
         attention_block_types: [ "Temporal_Self", ]
         temporal_position_encoding: true
         temporal_position_encoding_max_len: 16
+
+    epipolar_config:
+      origin_h: 256
+      origin_w: 256
+      is_3d_full_attn: false
+      num_register_tokens: 4
+      attention_resolution: [8, 4, 2, 1]
+      compression_factor: 1
+      add_small_perturbation_on_zero_T: true
 
 data:
   target: utils_data.DataModuleFromConfig

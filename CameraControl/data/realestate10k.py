@@ -182,6 +182,15 @@ class RealEstate10K(Dataset):
                 self.resolution[0], self.resolution[1],  # H, W
                 fx, fy, cx, cy
             )
+            camera_data[:, 1:5] = torch.stack(
+                [
+                    camera_intrinsics[:, 0, 0],  # fx
+                    camera_intrinsics[:, 1, 1],  # fy
+                    camera_intrinsics[:, 0, 2],  # cx
+                    camera_intrinsics[:, 1, 2],  # cy
+                ],
+                dim=-1,
+            )
 
         if self.resolution is not None:
             assert (frames.shape[2] == self.resolution[0] and frames.shape[3] == self.resolution[1]), f'frames={frames.shape}, self.resolution={self.resolution}'

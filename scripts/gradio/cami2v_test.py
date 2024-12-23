@@ -125,8 +125,10 @@ class Image2Video:
         model_name: str,
         ref_img: Image.Image,
         caption: str,
+        negative_prompt: str,
         camera_pose_type: str,
         trace_extract_ratio: float = 1.0,
+        frame_stride: int = 1,
         steps: int = 25,
         trace_scale_factor: float = 1.0,
         camera_cfg: float = 1.0,
@@ -136,7 +138,6 @@ class Image2Video:
         use_bezier_curve: bool = False,
         bezier_coef_a: float = None,
         bezier_coef_b: float = None,
-        frame_stride: int = 1,
         loop: bool = False,
         cond_frame_index: int = 0,
         eta: float = 1.0,
@@ -150,7 +151,7 @@ class Image2Video:
         w2cs_4x4 = torch.cat(
             [w2cs_3x4, torch.tensor([[[0, 0, 0, 1]]] * w2cs_3x4.shape[0], device=w2cs_3x4.device)], dim=1
         )  # [t, 4, 4]
-        c2ws_4x4 = w2cs_4x4.inverse()[: max(1, int(w2cs_4x4.shape[0] * trace_extract_ratio))]  # [t, 4, 4]
+        c2ws_4x4 = w2cs_4x4.inverse()[: max(2, int(0.5 + w2cs_4x4.shape[0] * trace_extract_ratio))]  # [t, 4, 4]
         if use_bezier_curve:
             c2ws_4x4 = camera_pose_lerp_bezier(c2ws_4x4, c2ws_4x4.shape[0], bezier_coef_a, bezier_coef_b)
         if loop:
@@ -191,13 +192,15 @@ class Image2Video:
             "enable_camera_condition": enable_camera_condition,
             "trace_scale_factor": trace_scale_factor,
             "result_dir": self.result_dir,
-            "negative_prompt": "fast movement, jittery motion, abrupt transitions, distorted body, missing limbs, unnatural posture, blurry, bad anatomy, deformed, glitchy motion, artifacts."
+            "negative_prompt": negative_prompt
         }
 
         frame_indices = list(range(0, self.video_length))
 
         input = single_image_preprocessor.get_batch_input(
-            ref_img, caption, w2cs_lerp_4x4[frame_indices, :3], frame_stride, ref_img2=ref_img2
+            ref_img,
+            "4K resolution, cinematic shot, photorealistic, detailed fur, smooth motion; " + caption,
+            w2cs_lerp_4x4[frame_indices, :3], frame_stride, ref_img2=ref_img2
         )
         input["cond_frame_index"] = torch.tensor(
             [cond_frame_index] * input["video"].shape[0], device=input["video"].device, dtype=torch.long

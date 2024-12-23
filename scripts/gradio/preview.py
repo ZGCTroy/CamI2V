@@ -1,10 +1,8 @@
-from argparse import ArgumentParser
-
-import imageio
 import numpy as np
 import open3d as o3d
 from pyvirtualdisplay import Display
 from tqdm import tqdm
+
 
 def select_visible_points(point_cloud, viewpoint):
     """
@@ -38,8 +36,7 @@ def select_visible_points(point_cloud, viewpoint):
 def render(
     size: tuple[int, int], intrinsics: np.ndarray, w2cs: np.ndarray, points: np.ndarray, colors: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
-
-    display = Display(visible=0, size=(512, 320))
+    display = Display(visible=False, size=size)
     display.start()
 
     renderer = o3d.visualization.rendering.OffscreenRenderer(*size)
@@ -60,19 +57,17 @@ def render(
     scene.clear_geometry()
     scene.add_geometry("point cloud", pcd, mat)
 
-
     rgb_frames = []
     for w2c in tqdm(w2cs, desc="Rendering previews"):
         renderer.setup_camera(K, w2c)
 
-
         # camera = np.array([0.0, 0.0, 0.0])  # 视点位置
-        radius = 300.0  # 视点到点云的最大距离
+        # radius = 300.0  # 视点到点云的最大距离
         # _, visible_indices = pcd.hidden_point_removal(np.linalg.inv(w2c)[:3,3].reshape(-1), radius)
         # visible_pcd = pcd.select_by_index(visible_indices)
-        visible_pcd = pcd
-        scene.clear_geometry()
-        scene.add_geometry("point cloud", visible_pcd, mat)
+        # visible_pcd = pcd
+        # scene.clear_geometry()
+        # scene.add_geometry("point cloud", visible_pcd, mat)
 
         rgb_frames.append(renderer.render_to_image())
 
@@ -82,9 +77,9 @@ def render(
 
 
 if __name__ == "__main__":
-    display = Display(visible=0, size=(512, 320))
+    display = Display(visible=False, size=(512, 320))
     display.start()
 
-    o3d.visualization.rendering.OffscreenRenderer(512, 320) # test
+    o3d.visualization.rendering.OffscreenRenderer(512, 320)
 
     display.stop()
