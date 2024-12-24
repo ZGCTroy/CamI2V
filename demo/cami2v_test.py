@@ -50,9 +50,9 @@ def camera_pose_lerp_bezier(c2w: Tensor, target_frames: int, coef_a: float, coef
 class Image2Video:
     def __init__(
         self,
-        result_dir: str = "./gradio_results",
-        model_meta_path: str = "./configs/models.json",
-        camera_pose_meta_path: str = "./configs/camera_poses.json",
+        result_dir: str = "./demo/results",
+        model_meta_path: str = "./demo/models.json",
+        camera_pose_meta_path: str = "./demo/camera_poses.json",
         return_camera_trace: bool = True,
         video_length: int = 16,
         save_fps: int = 10,

@@ -13,6 +13,7 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 !!!!! Code is not complete and clean. Environment installer, training scripts, evaluation code and gradio demo are on the way. In addition, we implement camera control methods using code injected to lvdm, which is not easy for python beginners. We will reconstruct code in several weeks. !!!! 
 
+- [x]  :fire: 2024/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
 - [x]  :fire: 2024/12/23: Release 256x256 checkpoint of [CamI2V](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt). Higher resolution is on the way, please stay tuned!
 - [x]  :fire: 2024/12/16: Release 256x256 checkpoint of [MotionCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) on DynamiCrafter.
 - [x]  :fire: 2024/12/09: Release training configs and scripts.
@@ -86,18 +87,29 @@ pip install -r requirements.txt
 
 ## :dizzy: Inference
 
-### Download Checkpoints
+### Download Model Checkpoints
 
-Currently we release checkpoints of DynamiCrafter-based CamI2v, CameraCtrl and MotionCtrl under 256x256 resolution on [Huggingface](https://huggingface.co/MuteApo/CamI2V/tree/main).
+Currently we release checkpoints of DynamiCrafter-based [CamI2V](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt), [CameraCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) and [MotionCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) under 256x256 resolution on [Huggingface](https://huggingface.co/MuteApo/CamI2V/tree/main).
 CamI2V with higher resolution is on the way, please stay tuned!
 
 Download above checkpoints and put under `ckpts` folder.
-Please edit `ckpt_path` in `models.json` if you have a different model path.
+Please edit `ckpt_path` in `configs/models.json` if you have a different model path.
+
+### Download Qwen2-VL (Optional)
+
+It is used to caption a custom image in gradio demo for generaion. We recommend a quantized version of Qwen2-VL due to speed and GPU memory, like [GPTQ-Int8](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int8) or [AWQ](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-AWQ) in official repo.
+
+Download the pre-trained model and put under `pretrained_models` folder:
+
+```shell
+─┬─ pretrained_models/
+ └─── Qwen2-VL-7B-Instruct-AWQ/
+```
 
 ### Run Gradio Demo
 
 ```shell
-python cami2v_gradio_app.py
+python cami2v_gradio_app.py --use_qwenvl_captioner
 ```
 
 Gradio may struggle to establish network connection, please re-try with `--use_host_ip`.
@@ -113,8 +125,8 @@ Please follow instructions in [datasets](datasets) folder in this repo to downlo
 Download pretrained weights of base model [DynamiCrafter](https://huggingface.co/Doubiiu/DynamiCrafter) and put under `pretrained_models` folder:
 
 ```shell
-─┬─ pretrained_models\
- └─┬─ DynamiCrafter\
+─┬─ pretrained_models/
+ └─┬─ DynamiCrafter/
    └─── model.ckpt
 ```
 

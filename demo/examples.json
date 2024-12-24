@@ -1,0 +1,18 @@
+[
+    {
+        "input_image": "demo/pexels/pexels-eberhardgross-534164.jpg",
+        "input_text": "Tranquil mountain lake surrounded by lush greenery and towering peaks under a clear blue sky."
+    },
+    {
+        "input_image": "demo/pexels/pexels-steve-858076.jpg",
+        "input_text": "Sunlit brick wall with a blurred urban street in the golden hour."
+    },
+    {
+        "input_image": "demo/pexels/pexels-ollivves-1078983.jpg",
+        "input_text": "Aerial view of a tropical coastline with lush palm trees, golden sands, and crystal-clear waters."
+    },
+    {
+        "input_image": "demo/pexels/pexels-digitech-1438761.jpg",
+        "input_text": "Snow-covered forest with a winding road cutting through, viewed from above."
+    }
+]

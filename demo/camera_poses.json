@@ -1,0 +1,18 @@
+{
+    "zoom in": "demo/camera_pose_files/zoom in.txt",
+    "zoom out": "demo/camera_pose_files/zoom out.txt",
+    "pan up": "demo/camera_pose_files/pan up.txt",
+    "pan down": "demo/camera_pose_files/pan down.txt",
+    "pan left": "demo/camera_pose_files/pan left.txt",
+    "pan right": "demo/camera_pose_files/pan right.txt",
+    "look up": "demo/camera_pose_files/look up.txt",
+    "look down": "demo/camera_pose_files/look down.txt",
+    "look left": "demo/camera_pose_files/look left.txt",
+    "look right": "demo/camera_pose_files/look right.txt",
+    "orbit up": "demo/camera_pose_files/orbit up.txt",
+    "orbit left": "demo/camera_pose_files/orbit left.txt",
+    "orbit right": "demo/camera_pose_files/orbit right.txt",
+    "rotate clockwise": "demo/camera_pose_files/rotate clockwise.txt",
+    "rotate anti-clockwise": "demo/camera_pose_files/rotate anti-clockwise.txt",
+    "stationary": "demo/camera_pose_files/stationary.txt"
+}
