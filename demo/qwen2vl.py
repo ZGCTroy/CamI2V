@@ -32,6 +32,11 @@ class Qwen2VL_Captioner:
             max_pixels=max_pixels * 28 * 28,
         )
 
+    def offload_cpu(self):
+        if hasattr(self, "model"):
+            self.model = self.model.cpu()
+            torch.cuda.empty_cache()
+
     def set_message(self, img: str):
         return [
             {

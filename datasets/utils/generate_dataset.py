@@ -107,11 +107,9 @@ class DataDownloader:
                 print(e)
                 with open(f"failed_videos_{self.split}.txt", "a") as f:
                     f.writelines(os.path.basename(filepath) + "\n")
-                if os.path.exists(tmpname):
-                    os.system(f"rm {tmpname}")
                 continue
 
-            os.system(f"mv {tmpname} {filepath}")
+            os.system(f"mv /tmp/{tmpname} {filepath}")
 
             sleep(1)
 

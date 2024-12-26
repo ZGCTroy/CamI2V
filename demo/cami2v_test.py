@@ -64,7 +64,7 @@ class Image2Video:
         self.return_camera_trace = return_camera_trace
         self.video_length = video_length
         self.save_fps = save_fps
-        self.device = device
+        self.device = torch.device(device)
 
         os.makedirs(self.result_dir, exist_ok=True)
 
@@ -74,7 +74,7 @@ class Image2Video:
     def load_model(self, config_file: str, ckpt_path: str, width: int, height: int):
         config = OmegaConf.load(config_file)
         config.model.params.perframe_ae = True
-        model: MotionCtrl | CameraCtrl | CamI2V = instantiate_from_config(config.model).to(self.device).eval()
+        model: MotionCtrl | CameraCtrl | CamI2V = instantiate_from_config(config.model)
 
         if model.rescale_betas_zero_snr:
             model.register_schedule(
@@ -85,7 +85,6 @@ class Image2Video:
                 linear_end=model.linear_end,
                 cosine_s=model.cosine_s,
             )
-        model = model.to(self.device)
 
         model.eval()
         for n, p in model.named_parameters():
@@ -105,7 +104,6 @@ class Image2Video:
                 print(e)
                 model.load_state_dict(state_dict, strict=False)
 
-        model = model.to(self.device)
         model.uncond_type = "negative_prompt"
         # print("model dtype", model.dtype)
 
@@ -117,6 +115,11 @@ class Image2Video:
         )
 
         return model, single_image_processor
+
+    def offload_cpu(self):
+        for k, v in self.models.items():
+            self.models[k] = v.cpu()
+        torch.cuda.empty_cache()
 
     @torch.no_grad
     @torch.autocast("cuda", enabled=True)
@@ -163,6 +166,7 @@ class Image2Video:
 
         for k, v in filter(lambda x: x[0] != model_name, self.models.items()):
             self.models[k] = v.cpu()
+        torch.cuda.empty_cache()
 
         if model_name not in self.models:
             with open(self.model_meta_file, "r", encoding="utf-8") as f:
@@ -177,8 +181,6 @@ class Image2Video:
         model = self.models[model_name].to(self.device)
         single_image_preprocessor = self.single_image_processors[model_name]
         print("using", model_name)
-
-        torch.cuda.empty_cache()
 
         seed_everything(seed)
         log_images_kwargs = {

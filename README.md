@@ -95,10 +95,11 @@ CamI2V with higher resolution is on the way, please stay tuned!
 Download above checkpoints and put under `ckpts` folder.
 Please edit `ckpt_path` in `configs/models.json` if you have a different model path.
 
-### Download Qwen2-VL (Optional)
+### Download Qwen2-VL Captioner
 
-It is used to caption a custom image in gradio demo for generaion. We recommend a quantized version of Qwen2-VL due to speed and GPU memory, like [GPTQ-Int8](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int8) or [AWQ](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-AWQ) in official repo.
-
+Optional, not required but recommend.
+It is used to caption a custom image in gradio demo for video generaion.
+We prefer a quantized version of Qwen2-VL due to speed and GPU memory, like [GPTQ-Int8](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int8) or [AWQ](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-AWQ) in official repo.
 Download the pre-trained model and put under `pretrained_models` folder:
 
 ```shell

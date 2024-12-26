@@ -14,6 +14,8 @@ mv datasets/RealEstate10K/train datasets/RealEstate10K/pose_files/
 
 ## Download Videos
 
+You may need `pip install pytubefix` to run this script. By default, it will try to download the highest resolution if available, you can change this behaviour at [line 103](utils/generate_dataset.py#L103).
+
 ```shell
 python datasets/utils/generate_dataset.py --split "test"
 ```

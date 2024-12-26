@@ -4,7 +4,7 @@
 First do not forget to update submodules required by this repo:
 
 ```shell
-git submodule update
+git submodule update --init
 ```
 
 Check system dependencies:
@@ -12,7 +12,7 @@ Check system dependencies:
 ```shell
 sudo apt install git cmake ninja-build build-essential ccache
 sudo apt install libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev
-sudo apt install libboost-program-options-dev libboost-graph-dev libboost-system-dev libflann-dev libfreeimage-dev libmetis-dev libgtest-dev libgmock-dev libsqlite3-dev libglew-dev qtbase5-dev libqt5opengl5-dev libcgal-dev libceres-dev
+sudo apt install libboost-program-options-dev libboost-graph-dev libboost-system-dev libboost-filesystem-dev libflann-dev libfreeimage-dev libmetis-dev libgtest-dev libgmock-dev libsqlite3-dev libglew-dev qtbase5-dev libqt5opengl5-dev libcgal-dev libceres-dev
 ```
 
 It is recommended to compile following tools under gcc/g++ 10:

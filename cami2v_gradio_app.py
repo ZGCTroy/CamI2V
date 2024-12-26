@@ -40,7 +40,7 @@ def dynamicrafter_demo(args):
     image2video = Image2Video(args.result_dir, args.model_meta_path, args.camera_pose_meta_path, device=args.device)
 
     with gr.Blocks(analytics_enabled=False, css=r"""
-        #input_img img {width: auto !important;}
+        #input_img img {height: 320px !important;}
         #output_vid video {width: auto !important; margin: auto !important;}
     """) as dynamicrafter_iface:
         gr.Markdown("""
@@ -73,14 +73,14 @@ def dynamicrafter_demo(args):
             with gr.Column():
                 model_name = gr.Dropdown(label='Model Name', elem_id="model_name", choices=load_model_name())
                 camera_pose_type = gr.Dropdown(label='Camera Pose Type', elem_id="camera_pose_type", choices=load_camera_pose_type())
-                trace_extract_ratio = gr.Slider(minimum=0, maximum=1.0, step=0.1, elem_id="trace_extract_ratio", label="Trace Extract Ratio", value=0.5)
-                trace_scale_factor = gr.Slider(minimum=0, maximum=5, step=0.1, elem_id="trace_scale_factor", label="Camera Trace Scale Factor", value=0.2)
+                trace_extract_ratio = gr.Slider(minimum=0, maximum=1.0, step=0.1, elem_id="trace_extract_ratio", label="Trace Extract Ratio", value=0.1)
+                trace_scale_factor = gr.Slider(minimum=0, maximum=5, step=0.1, elem_id="trace_scale_factor", label="Camera Trace Scale Factor", value=1.0)
 
             with gr.Column():
                 enable_camera_condition = gr.Checkbox(label='Enable Camera Condition', elem_id="enable_camera_condition", value=True)
                 camera_cfg = gr.Slider(minimum=1.0, maximum=4.0, step=0.1, elem_id="Camera CFG", label="Camera CFG", value=1.0, visible=False)
-                cfg_scale = gr.Slider(minimum=1.0, maximum=15.0, step=0.5, label='CFG Scale', value=6, elem_id="cfg_scale")
-                frame_stride = gr.Slider(minimum=1, maximum=10, step=1, label='Frame Stride', value=5, elem_id="frame_stride")
+                cfg_scale = gr.Slider(minimum=1.0, maximum=15.0, step=0.5, label='CFG Scale', value=5.5, elem_id="cfg_scale")
+                frame_stride = gr.Slider(minimum=1, maximum=10, step=1, label='Frame Stride', value=2, elem_id="frame_stride")
                 steps = gr.Slider(minimum=1, maximum=250, step=1, elem_id="steps", label="Sampling Steps (DDPM)", value=25)
                 seed = gr.Slider(label="Random Seed", minimum=0, maximum=2**31, step=1, value=12333)
 
@@ -95,20 +95,30 @@ def dynamicrafter_demo(args):
             examples=load_example(),
             inputs=[input_image, input_text],
             outputs=[output_video1, output_3d],
-            fn=image2video.get_image,
         )
 
         if args.use_qwen2vl_captioner:
             from demo.qwen2vl import Qwen2VL_Captioner
 
             captioner = Qwen2VL_Captioner(model_path="pretrained_models/Qwen2-VL-7B-Instruct-AWQ", device=torch.device(args.device))
-            caption_btn.click(inputs=[input_image], outputs=[input_text], fn=captioner.caption)
+
+            def caption(*inputs):
+                image2video.offload_cpu()
+                return captioner.caption(*inputs)
+
+            caption_btn.click(inputs=[input_image], outputs=[input_text], fn=caption)
+        
+        def generate(*inputs):
+            if args.use_qwen2vl_captioner:
+                captioner.offload_cpu()
+            return image2video.get_image(*inputs)
 
         end_btn.click(
+            fn=generate,
             inputs=[model_name, input_image, input_text, negative_prompt, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
             outputs=[output_video1, output_3d],
-            fn=image2video.get_image
         )
+
         reload_btn.click(
             fn=lambda: (gr.Dropdown(choices=load_model_name()), gr.Dropdown(choices=load_camera_pose_type()), gr.Dataset(samples=load_example())),
             outputs=[model_name, camera_pose_type, gr_examples.dataset]

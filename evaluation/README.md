@@ -7,7 +7,7 @@ This repo contains evaluation pipeline of CamI2V for camera controllability (Rot
 First update submodules required by this repo:
 
 ```shell
-git submodule update
+git submodule update --init
 ```
 
 For system dependencies and tool compilation, please refer to [installation guide](install.md).
@@ -24,18 +24,18 @@ torchrun --standalone --nproc_per_node 8 main/trainer.py --test --base $config_f
 Resulting file structure would be like:
 
 ```
-<YOUR_SAVE_ROOT>/                    <-- "save_root" variable above
-  ├── <YOUR_CUSTOM_SUFFIX>/          <-- "suffix_name" variable above
-    ├── images/
-      ├── test/
-        ├── <YOUR_CONFIG_SUFFIX>/    <-- auto generated from config yaml by trainer
-          ├── camera_data/
-          ├── condition/
-          ├── gt_video/
-          ├── image_condition/
-          ├── reconst/
-          ├── samples/
-          ├── video_path/
+─┬─ <YOUR_SAVE_ROOT>/                 <-- "save_root" variable above
+ └─┬─ <YOUR_CUSTOM_SUFFIX>/           <-- "suffix_name" variable above
+   └──┬─ images/
+      └─┬─ test/
+        └─┬─ <YOUR_CONFIG_SUFFIX>/    <-- auto generated from config yaml by trainer
+          ├─── camera_data/
+          ├─── condition/
+          ├─── gt_video/
+          ├─── image_condition/
+          ├─── reconst/
+          ├─── samples/
+          └─── video_path/
 ```
 
 For convenience, we use `EXP_DIR=<YOUR_SAVE_ROOT>/<YOUR_CUSTOM_SUFFIX>/images/test/<YOUR_CONFIG_SUFFIX>` in evaluation code.
