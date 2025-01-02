@@ -1,12 +1,12 @@
 model:
-  pretrained_checkpoint: pretrained_models/DynamiCrafter/model.ckpt
+  pretrained_checkpoint: pretrained_models/DynamiCrafter_512/model.ckpt
   base_learning_rate: 1e-4
   scale_lr: false
   target: CameraControl.CamI2V.cami2v.CamI2V
   params:
     diffusion_model_trainable_param_list: ['']
-    rescale_betas_zero_snr: false
-    parameterization: "eps"
+    rescale_betas_zero_snr: true
+    parameterization: "v"
     linear_start: 0.00085
     linear_end: 0.012
     num_timesteps_cond: 1
@@ -18,7 +18,7 @@ model:
     cond_stage_trainable: false
     image_proj_model_trainable: false
     conditioning_key: hybrid
-    image_size: [32, 32]
+    image_size: [40, 64]
     channels: 4
     scale_by_std: false
     scale_factor: 0.18215
@@ -26,9 +26,9 @@ model:
     uncond_prob: 0.05
     uncond_type: 'empty_seq'
     rand_cond_frame: true
-    use_dynamic_rescale: false
-    base_scale: 1.0
-    fps_condition_type: 'fs'
+    use_dynamic_rescale: true
+    base_scale: 0.7
+    fps_condition_type: 'fps'
     perframe_ae: false
 
     unet_config:
@@ -61,8 +61,7 @@ model:
         temporal_length: 16
         addition_attention: true
         image_cross_attention: true
-        image_cross_attention_scale_learnable: true
-        default_fs: 3
+        default_fs: 10
         fs_condition: true
 
     first_stage_config:
@@ -132,10 +131,10 @@ model:
         temporal_position_encoding_max_len: 16
 
     epipolar_config:
-      origin_h: 256
-      origin_w: 256
+      origin_h: 320
+      origin_w: 512
       num_register_tokens: 4
-      attention_resolution: [8, 4, 2, 1]
+      attention_resolution: [8, 4, 2]
       add_small_perturbation_on_zero_T: true
 
 data:
@@ -154,7 +153,7 @@ data:
         video_length: 16
         frame_stride: [1, 10]
         frame_stride_for_condition: 0
-        resolution: [ 256, 256 ]
+        resolution: [ 320, 512 ]
         spatial_transform: resize_center_crop
         invert_video: false
 
@@ -167,7 +166,7 @@ data:
         video_length: 16
         frame_stride: 8
         frame_stride_for_condition: 0
-        resolution: [ 256, 256 ]
+        resolution: [ 320, 512 ]
         spatial_transform: resize_center_crop
         invert_video: false
 

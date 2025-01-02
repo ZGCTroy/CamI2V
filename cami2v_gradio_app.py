@@ -56,7 +56,6 @@ def dynamicrafter_demo(args):
             output_3d = gr.Model3D(label="Camera Trajectory", elem_id="cam_traj", clear_color=[1.0, 1.0, 1.0, 1.0])
             output_video1 = gr.Video(label="New Generated Video", elem_id="output_vid", interactive=False, autoplay=True, loop=True)
             output_video2 = gr.Video(label="Previous Generated Video", elem_id="output_vid", interactive=False, autoplay=True, loop=True)
-            state_last_video = gr.State(value=None)
 
         with gr.Row():
             end_btn = gr.Button("Generate")
@@ -95,6 +94,7 @@ def dynamicrafter_demo(args):
             examples=load_example(),
             inputs=[input_image, input_text],
             outputs=[output_video1, output_3d],
+            examples_per_page=-1,
         )
 
         if args.use_qwen2vl_captioner:
@@ -107,7 +107,7 @@ def dynamicrafter_demo(args):
                 return captioner.caption(*inputs)
 
             caption_btn.click(inputs=[input_image], outputs=[input_text], fn=caption)
-        
+
         def generate(*inputs):
             if args.use_qwen2vl_captioner:
                 captioner.offload_cpu()
@@ -118,13 +118,13 @@ def dynamicrafter_demo(args):
             inputs=[model_name, input_image, input_text, negative_prompt, camera_pose_type, trace_extract_ratio, frame_stride, steps, trace_scale_factor, camera_cfg, cfg_scale, seed, enable_camera_condition],
             outputs=[output_video1, output_3d],
         )
+        end_btn.click(fn=lambda x: x, inputs=[output_video1], outputs=[output_video2])
 
         reload_btn.click(
             fn=lambda: (gr.Dropdown(choices=load_model_name()), gr.Dropdown(choices=load_camera_pose_type()), gr.Dataset(samples=load_example())),
             outputs=[model_name, camera_pose_type, gr_examples.dataset]
         )
 
-        output_video1.change(fn=lambda s, v: (gr.State(value=v), s), inputs=[state_last_video, output_video1], outputs=[state_last_video, output_video2])
         bezier_coef_a.change(fn=lambda a, b: gr.LinePlot(plot_bezier_curve(a, b)), inputs=[bezier_coef_a, bezier_coef_b], outputs=[bezier_curve])
         bezier_coef_b.change(fn=lambda a, b: gr.LinePlot(plot_bezier_curve(a, b)), inputs=[bezier_coef_a, bezier_coef_b], outputs=[bezier_curve])
 
@@ -159,4 +159,4 @@ if __name__ == "__main__":
 
     dynamicrafter_iface = dynamicrafter_demo(args)
     dynamicrafter_iface.queue(max_size=12)
-    dynamicrafter_iface.launch(max_threads=10, server_name=get_ip_addr() if args.use_host_ip else None, allowed_paths=["gradio", "internal"])
+    dynamicrafter_iface.launch(max_threads=10, server_name=get_ip_addr() if args.use_host_ip else None, allowed_paths=["demo", "internal/prompts"])

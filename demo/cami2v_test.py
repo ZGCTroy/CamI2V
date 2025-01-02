@@ -16,6 +16,7 @@ from CameraControl.cameractrl.cameractrl import CameraCtrl
 from CameraControl.CamI2V.cami2v import CamI2V
 from CameraControl.data.single_image_for_inference import SingleImageForInference
 from CameraControl.data.utils import camera_pose_lerp, create_line_point_cloud, relative_pose
+from CameraControl.dynamicrafter.dynamicrafter import DynamiCrafter
 from CameraControl.motionctrl.motionctrl import MotionCtrl
 from utils.utils import instantiate_from_config
 
@@ -73,8 +74,7 @@ class Image2Video:
 
     def load_model(self, config_file: str, ckpt_path: str, width: int, height: int):
         config = OmegaConf.load(config_file)
-        config.model.params.perframe_ae = True
-        model: MotionCtrl | CameraCtrl | CamI2V = instantiate_from_config(config.model)
+        model: DynamiCrafter | MotionCtrl | CameraCtrl | CamI2V = instantiate_from_config(config.model)
 
         if model.rescale_betas_zero_snr:
             model.register_schedule(
@@ -117,12 +117,11 @@ class Image2Video:
         return model, single_image_processor
 
     def offload_cpu(self):
-        for k, v in self.models.items():
-            self.models[k] = v.cpu()
+        for v in self.models.values():
+            v.cpu()
         torch.cuda.empty_cache()
 
     @torch.no_grad
-    @torch.autocast("cuda", enabled=True)
     def get_image(
         self,
         model_name: str,
@@ -154,18 +153,19 @@ class Image2Video:
         w2cs_4x4 = torch.cat(
             [w2cs_3x4, torch.tensor([[[0, 0, 0, 1]]] * w2cs_3x4.shape[0], device=w2cs_3x4.device)], dim=1
         )  # [t, 4, 4]
-        c2ws_4x4 = w2cs_4x4.inverse()[: max(2, int(0.5 + w2cs_4x4.shape[0] * trace_extract_ratio))]  # [t, 4, 4]
+        c2ws_4x4 = w2cs_4x4.inverse()  # [t, 4, 4]
         if use_bezier_curve:
             c2ws_4x4 = camera_pose_lerp_bezier(c2ws_4x4, c2ws_4x4.shape[0], bezier_coef_a, bezier_coef_b)
         if loop:
             c2ws_4x4 = torch.cat([c2ws_4x4, c2ws_4x4.flip(0)], dim=0)
-        c2ws_lerp_4x4 = camera_pose_lerp(c2ws_4x4, self.video_length)  # [video_length, 4, 4]
+        c2ws_lerp_4x4 = camera_pose_lerp(c2ws_4x4, round(self.video_length / trace_extract_ratio))[: self.video_length]
         w2cs_lerp_4x4 = c2ws_lerp_4x4.inverse()  # [video_length, 4, 4]
         rel_c2ws_lerp_4x4 = relative_pose(c2ws_lerp_4x4, mode="left", ref_index=cond_frame_index).clone()
         rel_c2ws_lerp_4x4[:, :3, 3] = rel_c2ws_lerp_4x4[:, :3, 3] * trace_scale_factor
 
-        for k, v in filter(lambda x: x[0] != model_name, self.models.items()):
-            self.models[k] = v.cpu()
+        for k, v in self.models.items():
+            if k != model_name:
+                v.cpu()
         torch.cuda.empty_cache()
 
         if model_name not in self.models:
@@ -178,9 +178,10 @@ class Image2Video:
             self.single_image_processors[model_name] = single_image_preprocessor
             print("models loaded:", list(self.models.keys()))
 
+        print("using", model_name)
         model = self.models[model_name].to(self.device)
         single_image_preprocessor = self.single_image_processors[model_name]
-        print("using", model_name)
+        torch.cuda.empty_cache()
 
         seed_everything(seed)
         log_images_kwargs = {
@@ -209,7 +210,8 @@ class Image2Video:
         )
         log_images_kwargs["cond_frame_index"] = input["cond_frame_index"].clone()
 
-        output = model.log_images(input, **log_images_kwargs)
+        with torch.autocast(self.device.type):
+            output = model.log_images(input, **log_images_kwargs)
         video_clip = output["samples"].clamp(-1.0, 1.0).cpu()  # b, c, f, h, w
 
         video_path = f"{self.result_dir}/{model_name}_{uuid4().fields[0]:x}.mp4"

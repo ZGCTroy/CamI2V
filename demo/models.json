@@ -1,4 +1,16 @@
 {
+    "512_CamI2V": {
+        "config_file": "configs/003_cami2v_512x320.yaml",
+        "ckpt_path": "ckpts/512_cami2v_50k.pt",
+        "width": 512,
+        "height": 320
+    },
+    "512_DynamiCrafter": {
+        "config_file": "configs/000_dynamicrafter_512x320.yaml",
+        "ckpt_path": "pretrained_models/DynamiCrafter_512/model.ckpt",
+        "width": 256,
+        "height": 256
+    },
     "256_CamI2V": {
         "config_file": "configs/003_cami2v_256x256.yaml",
         "ckpt_path": "ckpts/256_cami2v.pt",

@@ -1,8 +1,18 @@
 # CamI2V: Camera-Controlled Image-to-Video Diffusion Model
 
-Official repo of paper for "CamI2V: Camera-Controlled Image-to-Video Diffusion Model".
+<div align="center">
+    <a href="https://arxiv.org/abs/2410.15957">
+        <img src="https://img.shields.io/static/v1?label=arXiv&message=2410.15957&color=b21d1a">
+    </a>
+    <a href="https://zgctroy.github.io/CamI2V">
+        <img src="https://img.shields.io/static/v1?label=Project&message=Page&color=green">
+    </a>
+    <a href="https://huggingface.co/MuteApo/CamI2V/tree/main">
+        <img src="https://img.shields.io/static/v1?label=HuggingFace&message=Checkpoints&color=blue">
+    </a>
+</div>
 
-Project page: https://zgctroy.github.io/CamI2V/
+Official repo of paper for "CamI2V: Camera-Controlled Image-to-Video Diffusion Model".
 
 Abstract:
 Recent advancements have integrated camera pose as a user-friendly and physics-informed condition in video diffusion models, enabling precise camera control. In this paper, we identify one of the key challenges as effectively modeling noisy cross-frame interactions to enhance geometry consistency and camera controllability. We innovatively associate the quality of a condition with its ability to reduce uncertainty and interpret noisy cross-frame features as a form of noisy condition. Recognizing that noisy conditions provide deterministic information while also introducing randomness and potential misguidance due to added noise, we propose applying epipolar attention to only aggregate features along corresponding epipolar lines, thereby accessing an optimal amount of noisy conditions. Additionally, we address scenarios where epipolar lines disappear, commonly caused by rapid camera movements, dynamic objects, or occlusions, ensuring robust performance in diverse environments.
@@ -11,10 +21,9 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 ## :star2: News and Todo List
 
-!!!!! Code is not complete and clean. Environment installer, training scripts, evaluation code and gradio demo are on the way. In addition, we implement camera control methods using code injected to lvdm, which is not easy for python beginners. We will reconstruct code in several weeks. !!!! 
-
+- [x]  :fire: 2025/01/02: Release checkpoint of [CamI2V_512x320](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt).
 - [x]  :fire: 2024/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
-- [x]  :fire: 2024/12/23: Release 256x256 checkpoint of [CamI2V](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt). Higher resolution is on the way, please stay tuned!
+- [x]  :fire: 2024/12/23: Release checkpoint of [CamI2V_256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
 - [x]  :fire: 2024/12/16: Release 256x256 checkpoint of [MotionCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) on DynamiCrafter.
 - [x]  :fire: 2024/12/09: Release training configs and scripts.
 - [x]  :fire: 2024/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
@@ -25,6 +34,8 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 
 ## :chart_with_upwards_trend: Performance
+
+Measured under 256x256 resolution, 16 frames, 25steps.
 
 | Method                                                                              | RotErr $\downarrow$ | TransErr $\downarrow$ | CamMC $\downarrow$ | FVD $\downarrow$<br>(VideoGPT) | FVD $\downarrow$<br>(StyleGAN) |
 | :---------------------------------------------------------------------------------- | :-----------------: | :-------------------: | :----------------: | :----------------------------: | :----------------------------: |
@@ -41,36 +52,12 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 ### Inference Speed and GPU Memory
 
-Measured under 256x256 resolution, 16 frames, 25steps.
-
 | Method                                                      | # Parameters | GPU Memory | Generation Time<br>(RTX 3090) |
 | :---------------------------------------------------------- | :----------: | :--------: | :---------------------------: |
 | DynamiCrafter                                               |    1.4 B     | 11.14 GiB  |            8.14 s             |
 | + MotionCtrl                                                |   + 63.4 M   | 11.18 GiB  |            8.27 s             |
 | + Plucker Embedding<br>(Baseline, CameraCtrl)               |   + 211 M    | 11.56 GiB  |            8.38 s             |
 | + Plucker Embedding<br>+ Epipolar Attention<br>(Our CamI2V) |   + 261 M    | 11.67 GiB  |            10.3 s             |
-
-<!-- 
-## :camera: Visualization
-
-### 1024x576
-
-zoom in + zoom out
-
-![](https://github.com/user-attachments/assets/1405ee33-8404-40c9-b530-398c9aab88a5)
-
-### 512x320
-
-![](https://github.com/user-attachments/assets/1c45d326-7dca-406b-a6e7-b46df90fceb1)
-![](https://github.com/user-attachments/assets/a2176d29-d305-4a16-9ed3-c01440f5fc9a)
-![](https://github.com/user-attachments/assets/a766dbb2-9a7c-4d0d-a991-87c6534be316)
-
-Also see 512 resolution part of [https://zgctroy.github.io/CamI2V/](https://zgctroy.github.io/CamI2V/)
-
-### 256x256
-
-See 256 resolution part of [https://zgctroy.github.io/CamI2V/](https://zgctroy.github.io/CamI2V/) -->
-
 
 ## :gear: Environment
 
@@ -89,9 +76,7 @@ pip install -r requirements.txt
 
 ### Download Model Checkpoints
 
-Currently we release checkpoints of DynamiCrafter-based [CamI2V](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt), [CameraCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) and [MotionCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) under 256x256 resolution on [Huggingface](https://huggingface.co/MuteApo/CamI2V/tree/main).
-CamI2V with higher resolution is on the way, please stay tuned!
-
+Currently we release checkpoints of DynamiCrafter-based CamI2V ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt), [512x320](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt)), CameraCtrl ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt)) and MotionCtrl ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt)) on [Huggingface](https://huggingface.co/MuteApo/CamI2V/tree/main).
 Download above checkpoints and put under `ckpts` folder.
 Please edit `ckpt_path` in `configs/models.json` if you have a different model path.
 
@@ -123,11 +108,13 @@ Please follow instructions in [datasets](datasets) folder in this repo to downlo
 
 ### Download Pretrained Models
 
-Download pretrained weights of base model [DynamiCrafter](https://huggingface.co/Doubiiu/DynamiCrafter) and put under `pretrained_models` folder:
+Download pretrained weights of base model DynamiCrafter ([256x256](https://huggingface.co/Doubiiu/DynamiCrafter), [512x320](https://huggingface.co/Doubiiu/DynamiCrafter_512)) and put under `pretrained_models` folder:
 
 ```shell
 ─┬─ pretrained_models/
- └─┬─ DynamiCrafter/
+ ├─┬─ DynamiCrafter/
+ │ └─── model.ckpt
+ └─┬─ DynamiCrafter_512/
    └─── model.ckpt
 ```
 

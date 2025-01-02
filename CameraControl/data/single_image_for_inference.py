@@ -106,8 +106,8 @@ class SingleImageForInference():
 
         camera_pose_4x4 = rt34_to_44(camera_pose_3x4).to(device=self.device)  # (t,3,4) --> (t,4,4)
 
-        fx = 0.5 * resized_W
-        fy = 0.5 * resized_H
+        fx = 0.5 * max(resized_H, resized_W)
+        fy = fx
         cx = 0.5 * self.resolution[1]
         cy = 0.5 * self.resolution[0]
         camera_intrinsics = torch.tensor([fx, 0, cx, 0, fy, cy, 0, 0, 1.0], device=self.device).reshape(1, 1, 3, 3).repeat(1, self.video_length, 1, 1)

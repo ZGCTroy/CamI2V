@@ -34,7 +34,7 @@ class Qwen2VL_Captioner:
 
     def offload_cpu(self):
         if hasattr(self, "model"):
-            self.model = self.model.cpu()
+            self.model.cpu()
             torch.cuda.empty_cache()
 
     def set_message(self, img: str):
@@ -53,7 +53,7 @@ class Qwen2VL_Captioner:
             self.model: Qwen2VLForConditionalGeneration = self.load_model_func().eval()
             self.processor: Qwen2VLProcessor = self.load_proc_func()
 
-        model = self.model.to(self.device)
+        self.model.to(self.device)
 
         if isinstance(img, np.ndarray):
             with BytesIO() as buf:
@@ -70,7 +70,7 @@ class Qwen2VL_Captioner:
         ).to(self.device)
 
         # Inference: Generation of the output
-        generated_ids = model.generate(**inputs, max_new_tokens=128)
+        generated_ids = self.model.generate(**inputs, max_new_tokens=128)
         generated_ids_trimmed = [out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
         output_text, *_ = self.processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False

@@ -8,14 +8,14 @@ tqdm
 PyYAML
 setuptools
 scikit-learn
-lightning
+lightning==2.4.0
 deepspeed
 open3d
 decord
 omegaconf
 opencv_python
 pandas
-moviepy
+moviepy<2
 av<14
 gradio
 timm

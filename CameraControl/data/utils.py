@@ -114,7 +114,7 @@ def add_camera_trace(points, colors, points_x, points_y):
             end_point=np.array([x[idx[0]][idx[1]], y[idx[0]][idx[1]], 1.0]),
             num_points=50,
         )
-        points = np.concatenate((points, camera), axis=0)
+        points = np.concatenate((points, camera * 0.25), axis=0)
         colors = np.concatenate((colors, camera_colors), axis=0)
 
     for start_idx, end_idx in [
@@ -128,7 +128,7 @@ def add_camera_trace(points, colors, points_x, points_y):
             end_point=np.array([x[end_idx[0]][end_idx[1]], y[end_idx[0]][end_idx[1]], 1.0]),
             num_points=50,
         )
-        points = np.concatenate((points, camera), axis=0)
+        points = np.concatenate((points, camera * 0.25), axis=0)
         colors = np.concatenate((colors, camera_colors), axis=0)
 
     return points, colors
