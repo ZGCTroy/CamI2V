@@ -47,7 +47,7 @@ sudo ln -s /etc/alternatives/libcudss_commlayer_nccl.so /usr/lib/x86_64-linux-gn
 
 ```shell
 cd ceres-solver
-git submodule update --recursive
+git submodule update --init
 cmake -S . -B build -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=TRUE
 sudo cmake --build build --target install/strip
 ```

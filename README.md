@@ -21,16 +21,14 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 ## :star2: News and Todo List
 
-- [x]  :fire: 2025/01/02: Release checkpoint of [CamI2V_512x320](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt).
+- [x]  :fire: 2025/01/02: Release checkpoint of [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), which is suitable for research propose and comparison. We plan to release a more advanced model with longer training soon.
 - [x]  :fire: 2024/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
-- [x]  :fire: 2024/12/23: Release checkpoint of [CamI2V_256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
-- [x]  :fire: 2024/12/16: Release 256x256 checkpoint of [MotionCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) on DynamiCrafter.
+- [x]  :fire: 2024/12/23: Release checkpoint of [CamI2V (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
+- [x]  :fire: 2024/12/16: Release non-officially reproduced checkpoints of [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) on DynamiCrafter.
 - [x]  :fire: 2024/12/09: Release training configs and scripts.
 - [x]  :fire: 2024/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
 - [x]  :fire: 2024/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
-- [x]  :fire: 2024/11/16: Update project page for more visualization.
-- [x]  :fire: 2024/11/16: Release model code for training and inference of CamI2V, including implementation for MotionCtrl and CameraCtrl.
-- [x]  :seedling: 2024/10/14: Release of checkpoints, training, and evaluation codes in months.
+- [x]  :seedling: 2024/11/16: Release model code of CamI2V for training and inference, including implementation for MotionCtrl and CameraCtrl.
 
 
 ## :chart_with_upwards_trend: Performance
@@ -76,7 +74,14 @@ pip install -r requirements.txt
 
 ### Download Model Checkpoints
 
-Currently we release checkpoints of DynamiCrafter-based CamI2V ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt), [512x320](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt)), CameraCtrl ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt)) and MotionCtrl ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt)) on [Huggingface](https://huggingface.co/MuteApo/CamI2V/tree/main).
+| Model      | Resolution | Training Steps |
+| :--------- | :--------: | :------------: |
+| CamI2V     |  512x320   |      50k       |
+| CamI2V     |  256x256   |      50k       |
+| CameraCtrl |  256x256   |      50k       |
+| MotionCtrl |  256x256   |      50k       |
+
+Currently we release checkpoints of DynamiCrafter-based CamI2V ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt), [512x320](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt)), CameraCtrl ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt)) and MotionCtrl ([256x256](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt)), with 50k training steps.
 Download above checkpoints and put under `ckpts` folder.
 Please edit `ckpt_path` in `configs/models.json` if you have a different model path.
 
