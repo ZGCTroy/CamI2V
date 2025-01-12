@@ -55,6 +55,11 @@ class SingleImageForInference():
         :return: frames: C,F,crop_H,crop_W;  camera_intrinsics: F,3,3
         '''
         ori_H, ori_W = frames.shape[-2:]
+
+        if ori_W / ori_H < 1.0:
+            tmp_H, tmp_W = int(H), int(W)
+            H, W = tmp_W, tmp_H
+
         if ori_W / ori_H > W / H:
             frames = transforms.functional.resize(
                 frames,
@@ -108,8 +113,8 @@ class SingleImageForInference():
 
         fx = 0.5 * max(resized_H, resized_W)
         fy = fx
-        cx = 0.5 * self.resolution[1]
-        cy = 0.5 * self.resolution[0]
+        cx = 0.5 * ref_img.shape[-1]
+        cy = 0.5 * ref_img.shape[-2]
         camera_intrinsics = torch.tensor([fx, 0, cx, 0, fy, cy, 0, 0, 1.0], device=self.device).reshape(1, 1, 3, 3).repeat(1, self.video_length, 1, 1)
 
         data = {

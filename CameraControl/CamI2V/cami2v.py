@@ -5,7 +5,7 @@ import torch
 from einops import rearrange
 from torch import Tensor, nn
 
-from CameraControl.base.base import CameraControlLVDM
+from CameraControl.base.base import CameraControlLVDM, custom_meshgrid
 from CameraControl.CamI2V.cami2v_modified_modules import (
     new__forward_for_BasicTransformerBlock_of_TemporalTransformer,
     new_forward_for_BasicTransformerBlock_of_TemporalTransformer,
@@ -139,7 +139,7 @@ class CamI2V(CameraControlLVDM):
         y = pix2coord(y, downsample)  # H
         x = pix2coord(x, downsample)  # W
 
-        grid_y, grid_x = torch.meshgrid(y, x)  # H * W
+        grid_y, grid_x = custom_meshgrid(y, x)  # H * W
         # grid_y: 84x128
         # 3 x HW·
         # TODO check whether yx or xy

@@ -11,6 +11,14 @@ from utils.utils import instantiate_from_config
 mainlogger = logging.getLogger('mainlogger')
 
 
+def custom_meshgrid(*args):
+    # ref: https://pytorch.org/docs/stable/generated/torch.meshgrid.html?highlight=meshgrid#torch.meshgrid
+    if pver.parse(torch.__version__) < pver.parse('1.10'):
+        return torch.meshgrid(*args)
+    else:
+        return torch.meshgrid(*args, indexing='ij')
+
+
 class CameraControlLVDM(DynamiCrafter):
     def __init__(self,
                  diffusion_model_trainable_param_list=[],
@@ -107,13 +115,6 @@ class CameraControlLVDM(DynamiCrafter):
         # c2w: B, V, 4, 4
         # K: B, V, 3, 3
 
-        def custom_meshgrid(*args):
-            # ref: https://pytorch.org/docs/stable/generated/torch.meshgrid.html?highlight=meshgrid#torch.meshgrid
-            if pver.parse(torch.__version__) < pver.parse('1.10'):
-                return torch.meshgrid(*args)
-            else:
-                return torch.meshgrid(*args, indexing='ij')
-
         B, V = K.shape[:2]
 
         j, i = custom_meshgrid(
@@ -151,7 +152,7 @@ class CameraControlLVDM(DynamiCrafter):
         rays_o = c2w[..., :3, 3]  # B, V, 3
         rays_o = rays_o[:, :, None].expand_as(rays_d)  # B, V, HW, 3
         # c2w @ dirctions
-        rays_dxo = torch.cross(rays_o, rays_d)  # B, V, HW, 3
+        rays_dxo = torch.cross(rays_o, rays_d, dim=-1)  # B, V, HW, 3
         plucker = torch.cat([rays_dxo, rays_d], dim=-1)
         plucker = plucker.reshape(B, c2w.shape[1], H, W, 6)  # B, V, H, W, 6
         # plucker = plucker.permute(0, 1, 4, 2, 3)

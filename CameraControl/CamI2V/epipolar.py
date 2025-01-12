@@ -26,7 +26,6 @@ def de_normalize(pts, H, W):
     """
     WH = torch.tensor([[W, H]], dtype=pts.dtype, device=pts.device)
     return (pts + 1) * (WH - 1) / 2.0
-    return pts
 
 
 def pix2coord(x, downsample):
@@ -62,17 +61,12 @@ class EpipolarCrossAttention(nn.Module):
         else:
             self.to_out = nn.Sequential(nn.Linear(inner_dim, query_dim), nn.Dropout(dropout))
 
-        self.forward = self.efficient_forward
         self.num_register_tokens = num_register_tokens
 
         if num_register_tokens > 0:
             self.register_tokens = nn.Parameter(torch.randn((1, num_register_tokens, context_dim)), requires_grad=True)
 
-
-    def forward(self, x, attn_mask=None):
-        return x
-
-    def efficient_forward(self, x: Tensor, context: Tensor, attn_mask: Tensor = None):
+    def forward(self, x: Tensor, context: Tensor, attn_mask: Tensor = None):
         '''
         :param x:       B,L1,C
         :param context:       B,L2,C

@@ -10,6 +10,7 @@ from einops import rearrange
 from omegaconf import OmegaConf
 from PIL import Image
 from pytorch_lightning import seed_everything
+from safetensors.torch import load_file
 from torch import Tensor
 
 from CameraControl.cameractrl.cameractrl import CameraCtrl
@@ -72,9 +73,36 @@ class Image2Video:
         self.models: dict[str, MotionCtrl | CameraCtrl | CamI2V] = {}
         self.single_image_processors: dict[str, SingleImageForInference] = {}
 
-    def load_model(self, config_file: str, ckpt_path: str, width: int, height: int):
+    def parse_ckpt(self, path: str):
+        if path.endswith(".safetensors"):
+            state_dict = load_file(path)
+        else:
+            state_dict = torch.load(path, map_location="cpu", weights_only=True)
+            if "module" in state_dict:  # deepspeed checkpoint
+                state_dict = state_dict["module"]
+            elif "state_dict" in state_dict:  # lightning checkpoint
+                state_dict = state_dict["state_dict"]
+
+        return {k.replace("framestride_embed", "fps_embedding"): v for k, v in state_dict.items()}
+
+    def load_model(self, width: int, height: int, config_file: str, ckpt_path: str, base_ckpt_path: str = None):
         config = OmegaConf.load(config_file)
         model: DynamiCrafter | MotionCtrl | CameraCtrl | CamI2V = instantiate_from_config(config.model)
+        model.to(torch.float16).eval()
+
+        if ckpt_path:
+            state_dict = self.parse_ckpt(ckpt_path)
+            try:
+                model.load_state_dict(state_dict, strict=True)
+                print(f"successfully loaded full checkpoint {ckpt_path}")
+            except:
+                base_state_dict = self.parse_ckpt(base_ckpt_path)
+                try:
+                    model.load_state_dict(base_state_dict | state_dict, strict=True)
+                    print(f"successfully loaded checkpoint {ckpt_path} on base model {base_ckpt_path}")
+                except Exception as e:
+                    print(e)
+                    model.load_state_dict(state_dict, strict=False)
 
         if model.rescale_betas_zero_snr:
             model.register_schedule(
@@ -86,26 +114,7 @@ class Image2Video:
                 cosine_s=model.cosine_s,
             )
 
-        model.eval()
-        for n, p in model.named_parameters():
-            p.requires_grad = False
-
-        if ckpt_path:
-            state_dict = torch.load(ckpt_path, map_location="cpu")
-            if "module" in state_dict:  # deepspeed checkpoint
-                state_dict = state_dict["module"]
-            elif "state_dict" in state_dict:  # lightning checkpoint
-                state_dict = state_dict["state_dict"]
-            state_dict = {k.replace("framestride_embed", "fps_embedding"): v for k, v in state_dict.items()}
-            try:
-                model.load_state_dict(state_dict, strict=True)
-                print(f"successfully loaded checkpoint {ckpt_path}")
-            except Exception as e:
-                print(e)
-                model.load_state_dict(state_dict, strict=False)
-
         model.uncond_type = "negative_prompt"
-        # print("model dtype", model.dtype)
 
         single_image_processor = SingleImageForInference(
             video_length=self.video_length,
@@ -166,7 +175,6 @@ class Image2Video:
         for k, v in self.models.items():
             if k != model_name:
                 v.cpu()
-        torch.cuda.empty_cache()
 
         if model_name not in self.models:
             with open(self.model_meta_file, "r", encoding="utf-8") as f:
@@ -181,7 +189,6 @@ class Image2Video:
         print("using", model_name)
         model = self.models[model_name].to(self.device)
         single_image_preprocessor = self.single_image_processors[model_name]
-        torch.cuda.empty_cache()
 
         seed_everything(seed)
         log_images_kwargs = {
@@ -195,14 +202,14 @@ class Image2Video:
             "enable_camera_condition": enable_camera_condition,
             "trace_scale_factor": trace_scale_factor,
             "result_dir": self.result_dir,
-            "negative_prompt": negative_prompt
+            "negative_prompt": negative_prompt,
         }
 
         frame_indices = list(range(0, self.video_length))
 
         input = single_image_preprocessor.get_batch_input(
             ref_img,
-            "4K resolution, cinematic shot, photorealistic, detailed fur, smooth motion; " + caption,
+            caption + " dramatic camera movement, high quality, cinematic shot, photorealistic, detailed fur, smooth motion",
             w2cs_lerp_4x4[frame_indices, :3], frame_stride, ref_img2=ref_img2
         )
         input["cond_frame_index"] = torch.tensor(
@@ -214,7 +221,9 @@ class Image2Video:
             output = model.log_images(input, **log_images_kwargs)
         video_clip = output["samples"].clamp(-1.0, 1.0).cpu()  # b, c, f, h, w
 
-        video_path = f"{self.result_dir}/{model_name}_{uuid4().fields[0]:x}.mp4"
+        torch.cuda.empty_cache()
+
+        video_path = f"{self.result_dir}/{model_name}_{uuid4().fields[0]:08x}.mp4"
         self.save_video(video_clip, video_path)
         return_list = [video_path]
 

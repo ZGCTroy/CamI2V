@@ -22,7 +22,7 @@ class Qwen2VL_Captioner:
         self.load_model_func = partial(
             Qwen2VLForConditionalGeneration.from_pretrained,
             model_path,
-            torch_dtype="auto",
+            torch_dtype=torch.float16,
             device_map=torch.device("cpu"),
         )
         self.load_proc_func = partial(
