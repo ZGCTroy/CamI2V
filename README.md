@@ -19,6 +19,8 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 
 ## :star2: News and Todo List
 
+
+- :fire: 2025/01/12: Release demo of [RealCam-I2V github io](https://zgctroy.github.io/RealCam-I2V/) for real-world application
 - :fire: 2025/01/12: Release checkpoint of [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt). We plan to release a more advanced model with longer training soon.
 - :fire: 2025/01/02: Release checkpoint of [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), which is suitable for research propose and comparison.
 - :fire: 2024/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
