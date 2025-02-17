@@ -1,15 +1,9 @@
 # CamI2V: Camera-Controlled Image-to-Video Diffusion Model
 
 <div align="center">
-    <a href="https://arxiv.org/abs/2410.15957">
-        <img src="https://img.shields.io/static/v1?label=arXiv&message=2410.15957&color=b21d1a">
-    </a>
-    <a href="https://zgctroy.github.io/CamI2V">
-        <img src="https://img.shields.io/static/v1?label=Project&message=Page&color=green">
-    </a>
-    <a href="https://huggingface.co/MuteApo/CamI2V/tree/main">
-        <img src="https://img.shields.io/static/v1?label=HuggingFace&message=Checkpoints&color=blue">
-    </a>
+    <a href="https://arxiv.org/abs/2410.15957"><img src="https://img.shields.io/static/v1?label=arXiv&message=2410.15957&color=b21d1a"></a>
+    <a href="https://zgctroy.github.io/CamI2V"><img src="https://img.shields.io/static/v1?label=Project&message=Page&color=green"></a>
+    <a href="https://huggingface.co/MuteApo/CamI2V/tree/main"><img src="https://img.shields.io/static/v1?label=HuggingFace&message=Checkpoints&color=blue"></a>
 </div>
 
 Abstract:
@@ -20,7 +14,7 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 ## :star2: News and Todo List
 
 
-- :fire: 2025/01/12: Release demo of [RealCam-I2V github io](https://zgctroy.github.io/RealCam-I2V/) for real-world application
+- :fire: 2025/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications, code will be available at [repo](https://github.com/ZGCTroy/RealCam-I2V).
 - :fire: 2025/01/12: Release checkpoint of [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt). We plan to release a more advanced model with longer training soon.
 - :fire: 2025/01/02: Release checkpoint of [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), which is suitable for research propose and comparison.
 - :fire: 2024/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
@@ -184,6 +178,8 @@ Support for VBench is planned in months as well.
 
 ## :hugs: Related Repo
 
+[RealCam-I2V: https://github.com/ZGCTroy/RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V)
+
 [CameraCtrl: https://github.com/hehao13/CameraCtrl](https://github.com/hehao13/CameraCtrl)
 
 [MotionCtrl: https://github.com/TencentARC/MotionCtrl](https://github.com/TencentARC/MotionCtrl)
@@ -199,5 +195,12 @@ Support for VBench is planned in months as well.
   author={Zheng, Guangcong and Li, Teng and Jiang, Rui and Lu, Yehao and Wu, Tao and Li, Xi},
   journal={arXiv preprint arXiv:2410.15957},
   year={2024}
+}
+
+@article{li2025realcam,
+    title={RealCam-I2V: Real-World Image-to-Video Generation with Interactive Complex Camera Control}, 
+    author={Li, Teng and Zheng, Guangcong and Jiang, Rui and Zhan, Shuigen and Wu, Tao and Lu, Yehao and Lin, Yining and Li, Xi},
+    journal={arXiv preprint arXiv:2502.10059},
+    year={2025},
 }
 ```
