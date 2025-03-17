@@ -1,49 +1,44 @@
 {
     "CamI2V (512x320@100k)": {
-        "width": 512,
-        "height": 320,
-        "config_file": "configs/003_cami2v_512x320.yaml",
+        "config_file": "configs/inference/003_cami2v_512x320.yaml",
         "ckpt_path": "ckpts/512_cami2v_100k.pt",
-        "base_ckpt_path": "pretrained_models/DynamiCrafter_512/model.ckpt"
+        "width": 512,
+        "height": 320
     },
     "CamI2V (512x320@50k)": {
-        "width": 512,
-        "height": 320,
-        "config_file": "configs/003_cami2v_512x320.yaml",
+        "config_file": "configs/inference/003_cami2v_512x320.yaml",
         "ckpt_path": "ckpts/512_cami2v_50k.pt",
-        "base_ckpt_path": "pretrained_models/DynamiCrafter_512/model.ckpt"
+        "width": 512,
+        "height": 320
     },
     "CamI2V (256x256@50k)": {
+        "config_file": "configs/inference/003_cami2v_256x256.yaml",
+        "ckpt_path": "ckpts/256_cami2v_50k.pt",
         "width": 256,
-        "height": 256,
-        "config_file": "configs/003_cami2v_256x256.yaml",
-        "ckpt_path": "ckpts/256_cami2v.pt",
-        "base_ckpt_path": "pretrained_models/DynamiCrafter/model.ckpt"
+        "height": 256
     },
     "CameraCtrl (256x256@50k)": {
+        "config_file": "configs/inference/002_cameractrl_256x256.yaml",
+        "ckpt_path": "ckpts/256_cameractrl_50k.pt",
         "width": 256,
-        "height": 256,
-        "config_file": "configs/002_cameractrl_256x256.yaml",
-        "ckpt_path": "ckpts/256_cameractrl.pt",
-        "base_ckpt_path": "pretrained_models/DynamiCrafter/model.ckpt"
+        "height": 256
     },
     "MotionCtrl (256x256@50k)": {
+        "config_file": "configs/inference/001_motionctrl_256x256.yaml",
+        "ckpt_path": "ckpts/256_motionctrl_50k.pt",
         "width": 256,
-        "height": 256,
-        "config_file": "configs/001_motionctrl_256x256.yaml",
-        "ckpt_path": "ckpts/256_motionctrl.pt",
-        "base_ckpt_path": "pretrained_models/DynamiCrafter/model.ckpt"
+        "height": 256
     },
     "DynamiCrafter (512x320)": {
+        "config_file": "configs/inference/000_dynamicrafter_512x320.yaml",
+        "ckpt_path": "pretrained_models/DynamiCrafter_512/model.ckpt",
         "width": 512,
-        "height": 320,
-        "config_file": "configs/000_dynamicrafter_512x320.yaml",
-        "ckpt_path": "pretrained_models/DynamiCrafter_512/model.ckpt"
+        "height": 320
     },
     "DynamiCrafter (256x256)": {
+        "config_file": "configs/inference/000_dynamicrafter_256x256.yaml",
+        "ckpt_path": "pretrained_models/DynamiCrafter/model.ckpt",
         "width": 256,
-        "height": 256,
-        "config_file": "configs/000_dynamicrafter_256x256.yaml",
-        "ckpt_path": "pretrained_models/DynamiCrafter/model.ckpt"
+        "height": 256
     }
 }

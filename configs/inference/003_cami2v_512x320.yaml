@@ -1,0 +1,194 @@
+model:
+  pretrained_checkpoint: ckpts/512_cami2v.pt
+  base_learning_rate: 1e-4
+  scale_lr: false
+  target: CameraControl.CamI2V.cami2v.CamI2V
+  params:
+    diffusion_model_trainable_param_list: ['']
+    rescale_betas_zero_snr: true
+    parameterization: "v"
+    linear_start: 0.00085
+    linear_end: 0.012
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    first_stage_key: video
+    cond_stage_key: caption
+    pose_encoder_trainable: true
+    cond_stage_trainable: false
+    image_proj_model_trainable: false
+    conditioning_key: hybrid
+    image_size: [40, 64]
+    channels: 4
+    scale_by_std: false
+    scale_factor: 0.18215
+    use_ema: false
+    uncond_prob: 0.05
+    uncond_type: 'empty_seq'
+    rand_cond_frame: true
+    use_dynamic_rescale: true
+    base_scale: 0.7
+    fps_condition_type: 'fps'
+    perframe_ae: false
+
+    unet_config:
+      target: lvdm.modules.networks.openaimodel3d.UNetModel
+      params:
+        in_channels: 8
+        out_channels: 4
+        model_channels: 320
+        attention_resolutions:
+          - 4
+          - 2
+          - 1
+        num_res_blocks: 2
+        channel_mult:
+          - 1
+          - 2
+          - 4
+          - 4
+        dropout: 0.1
+        num_head_channels: 64
+        transformer_depth: 1
+        context_dim: 1024
+        use_linear: true
+        use_checkpoint: false
+        temporal_conv: true
+        temporal_attention: true
+        temporal_selfatt_only: true
+        use_relative_position: false
+        use_causal_attention: false
+        temporal_length: 16
+        addition_attention: true
+        image_cross_attention: true
+        default_fs: 10
+        fs_condition: true
+
+    first_stage_config:
+      target: lvdm.models.autoencoder.AutoencoderKL
+      params:
+        embed_dim: 4
+        monitor: val/rec_loss
+        ddconfig:
+          double_z: true
+          z_channels: 4
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult:
+            - 1
+            - 2
+            - 4
+            - 4
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+
+    cond_stage_config:
+      target: lvdm.modules.encoders.condition.FrozenOpenCLIPEmbedder
+      params:
+        freeze: true
+        layer: penultimate
+        version: null
+
+    img_cond_stage_config:
+      target: lvdm.modules.encoders.condition.FrozenOpenCLIPImageEmbedderV2
+      params:
+        freeze: true
+        version: null
+
+    image_proj_stage_config:
+      target: lvdm.modules.encoders.resampler.Resampler
+      params:
+        dim: 1024
+        depth: 4
+        dim_head: 64
+        heads: 12
+        num_queries: 16
+        embedding_dim: 1280
+        output_dim: 1024
+        ff_mult: 4
+        video_length: 16
+
+    add_type: add_to_main_branch
+    pose_encoder_config:
+      target: CameraControl.CamI2V.camera_pose_encoder.CameraPoseEncoder
+      params:
+        downscale_factor: 8
+        channels: [ 320, 640, 1280, 1280 ]
+        nums_rb: 2
+        cin: 384
+        ksize: 1
+        sk: true
+        use_conv: false
+        compression_factor: 1
+        temporal_attention_nhead: 8
+        attention_block_types: [ "Temporal_Self", ]
+        temporal_position_encoding: true
+        temporal_position_encoding_max_len: 16
+
+    epipolar_config:
+      origin_h: 320
+      origin_w: 512
+      num_register_tokens: 4
+      attention_resolution: [8, 4, 2]
+      add_small_perturbation_on_zero_T: true
+
+data:
+  target: utils_data.DataModuleFromConfig
+  params:
+    batch_size: 1
+    num_workers: 2
+    wrap: false
+    test_max_n_samples: 1000
+    test:
+      target: CameraControl.data.mix_dataset.MixDataset
+      params:
+        data_root: ../datasets/RealEstate10K
+        metadata_path: ../datasets/RealEstate10K/CamI2V_test_metadata_1k.pth
+        video_length: 16
+        frame_stride: 8
+        frame_stride_for_condition: 0
+        resolution: [ 320, 512 ]
+        spatial_transform: resize_center_crop
+
+lightning:
+  trainer:
+    num_nodes: 1
+    devices: 8
+    accelerator: "gpu"
+    strategy: "deepspeed_stage_1"
+    precision: "16-mixed"
+    benchmark: true
+    accumulate_grad_batches: 1
+    max_steps: 10000000
+    # logger
+    log_every_n_steps: 1000
+    # val
+    val_check_interval: 2000
+    check_val_every_n_epoch: 1
+    num_sanity_val_steps: 0
+    gradient_clip_algorithm: 'norm'
+    gradient_clip_val: 0.5
+  callbacks:
+    batch_logger:
+      target: callbacks.ImageLogger
+      params:
+        batch_frequency: 10000                      # optimization_steps
+        to_local: true
+        to_tensorboard: false
+        max_images: 8
+        save_suffix: ''
+        log_images_kwargs:
+          ddim_steps: 25
+          ddim_eta: 1.0
+          unconditional_guidance_scale: 7.5
+          timestep_spacing: uniform_trailing
+          guidance_rescale: 0.7
+          sampled_img_num: 1
+          camera_cfg: 1.0
+          camera_cfg_scheduler: constant
+          enable_camera_condition: true

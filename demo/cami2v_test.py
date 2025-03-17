@@ -8,7 +8,6 @@ import torch
 import torchvision
 from einops import rearrange
 from omegaconf import OmegaConf
-from PIL import Image
 from pytorch_lightning import seed_everything
 from safetensors.torch import load_file
 from torch import Tensor
@@ -85,7 +84,7 @@ class Image2Video:
 
         return {k.replace("framestride_embed", "fps_embedding"): v for k, v in state_dict.items()}
 
-    def load_model(self, width: int, height: int, config_file: str, ckpt_path: str, base_ckpt_path: str = None):
+    def load_model(self, config_file: str, ckpt_path: str, width: int, height: int):
         config = OmegaConf.load(config_file)
         model: DynamiCrafter | MotionCtrl | CameraCtrl | CamI2V = instantiate_from_config(config.model)
         model.to(torch.float16).eval()
@@ -96,10 +95,10 @@ class Image2Video:
                 model.load_state_dict(state_dict, strict=True)
                 print(f"successfully loaded full checkpoint {ckpt_path}")
             except:
-                base_state_dict = self.parse_ckpt(base_ckpt_path)
+                base_state_dict = self.parse_ckpt(config.model.pretrained_checkpoint)
                 try:
                     model.load_state_dict(base_state_dict | state_dict, strict=True)
-                    print(f"successfully loaded checkpoint {ckpt_path} on base model {base_ckpt_path}")
+                    print(f"successfully loaded checkpoint {ckpt_path} on base model {config.model.pretrained_checkpoint}")
                 except Exception as e:
                     print(e)
                     model.load_state_dict(state_dict, strict=False)
@@ -134,7 +133,7 @@ class Image2Video:
     def get_image(
         self,
         model_name: str,
-        ref_img: Image.Image,
+        ref_img: np.ndarray,
         caption: str,
         negative_prompt: str,
         camera_pose_type: str,
@@ -152,7 +151,7 @@ class Image2Video:
         loop: bool = False,
         cond_frame_index: int = 0,
         eta: float = 1.0,
-        ref_img2: Image.Image = None,
+        ref_img2: np.ndarray = None,
     ):
         with open(self.camera_pose_meta_path, "r", encoding="utf-8") as f:
             camera_pose_file_path = json.load(f)[camera_pose_type]

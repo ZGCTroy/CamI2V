@@ -27,5 +27,4 @@ tensorboard
 accelerate
 qwen_vl_utils[decord]
 optimum
-auto-gptq
 autoawq

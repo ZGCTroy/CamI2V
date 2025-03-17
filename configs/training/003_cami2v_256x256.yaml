@@ -38,15 +38,15 @@ model:
         out_channels: 4
         model_channels: 320
         attention_resolutions:
-        - 4
-        - 2
-        - 1
+          - 4
+          - 2
+          - 1
         num_res_blocks: 2
         channel_mult:
-        - 1
-        - 2
-        - 4
-        - 4
+          - 1
+          - 2
+          - 4
+          - 4
         dropout: 0.1
         num_head_channels: 64
         transformer_depth: 1
@@ -78,10 +78,10 @@ model:
           out_ch: 3
           ch: 128
           ch_mult:
-          - 1
-          - 2
-          - 4
-          - 4
+            - 1
+            - 2
+            - 4
+            - 4
           num_res_blocks: 2
           attn_resolutions: []
           dropout: 0.0
@@ -171,7 +171,6 @@ data:
         spatial_transform: resize_center_crop
         invert_video: false
 
-
 lightning:
   trainer:
     num_nodes: 1
@@ -203,6 +202,7 @@ lightning:
       params:
         batch_frequency: 10000                      # optimization_steps
         to_local: false
+        to_tensorboard: true
         max_images: 8
         save_suffix: ''
         log_images_kwargs:

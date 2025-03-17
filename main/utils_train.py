@@ -179,7 +179,7 @@ def load_checkpoints(model, model_cfg):
                     print('deepspeed load mode strict=False succeeded')
         except:
             model.load_state_dict(pl_sd)
-            print('ddp & deepload load failed, plain load succeeded')
+            print('ddp & deepspeed load failed, plain load succeeded')
 
         del pl_sd
     else:

@@ -1,11 +1,12 @@
 model:
-  pretrained_checkpoint: pretrained_models/DynamiCrafter_512/model.ckpt
-  base_learning_rate: 1e-5
+  pretrained_checkpoint: ckpts/256_cami2v.pt
+  base_learning_rate: 1e-4
   scale_lr: false
-  target: CameraControl.dynamicrafter.dynamicrafter.DynamiCrafter
+  target: CameraControl.CamI2V.cami2v.CamI2V
   params:
-    rescale_betas_zero_snr: true
-    parameterization: "v"
+    diffusion_model_trainable_param_list: ['']
+    rescale_betas_zero_snr: false
+    parameterization: "eps"
     linear_start: 0.00085
     linear_end: 0.012
     num_timesteps_cond: 1
@@ -13,10 +14,11 @@ model:
     timesteps: 1000
     first_stage_key: video
     cond_stage_key: caption
+    pose_encoder_trainable: true
     cond_stage_trainable: false
     image_proj_model_trainable: false
     conditioning_key: hybrid
-    image_size: [40, 64]
+    image_size: [32, 32]
     channels: 4
     scale_by_std: false
     scale_factor: 0.18215
@@ -24,9 +26,9 @@ model:
     uncond_prob: 0.05
     uncond_type: 'empty_seq'
     rand_cond_frame: true
-    use_dynamic_rescale: true
-    base_scale: 0.7
-    fps_condition_type: 'fps'
+    use_dynamic_rescale: false
+    base_scale: 1.0
+    fps_condition_type: 'fs'
     perframe_ae: false
 
     unet_config:
@@ -36,15 +38,15 @@ model:
         out_channels: 4
         model_channels: 320
         attention_resolutions:
-        - 4
-        - 2
-        - 1
+          - 4
+          - 2
+          - 1
         num_res_blocks: 2
         channel_mult:
-        - 1
-        - 2
-        - 4
-        - 4
+          - 1
+          - 2
+          - 4
+          - 4
         dropout: 0.1
         num_head_channels: 64
         transformer_depth: 1
@@ -59,7 +61,8 @@ model:
         temporal_length: 16
         addition_attention: true
         image_cross_attention: true
-        default_fs: 10
+        image_cross_attention_scale_learnable: true
+        default_fs: 3
         fs_condition: true
 
     first_stage_config:
@@ -75,10 +78,10 @@ model:
           out_ch: 3
           ch: 128
           ch_mult:
-          - 1
-          - 2
-          - 4
-          - 4
+            - 1
+            - 2
+            - 4
+            - 4
           num_res_blocks: 2
           attn_resolutions: []
           dropout: 0.0
@@ -111,39 +114,47 @@ model:
         ff_mult: 4
         video_length: 16
 
+    add_type: add_to_main_branch
+    pose_encoder_config:
+      target: CameraControl.CamI2V.camera_pose_encoder.CameraPoseEncoder
+      params:
+        downscale_factor: 8
+        channels: [ 320, 640, 1280, 1280 ]
+        nums_rb: 2
+        cin: 384
+        ksize: 1
+        sk: true
+        use_conv: false
+        compression_factor: 1
+        temporal_attention_nhead: 8
+        attention_block_types: [ "Temporal_Self", ]
+        temporal_position_encoding: true
+        temporal_position_encoding_max_len: 16
+
+    epipolar_config:
+      origin_h: 256
+      origin_w: 256
+      num_register_tokens: 4
+      attention_resolution: [8, 4, 2, 1]
+      add_small_perturbation_on_zero_T: true
+
 data:
   target: utils_data.DataModuleFromConfig
   params:
     batch_size: 1
     num_workers: 2
     wrap: false
-    validation_max_n_samples: 256
-    train:
-      target: CameraControl.data.realestate10k.RealEstate10K
+    test_max_n_samples: 1000
+    test:
+      target: CameraControl.data.mix_dataset.MixDataset
       params:
-        data_dir: ../datasets/RealEstate10K/video_clips/train
-        meta_path: ../datasets/RealEstate10K/valid_metadata/train
-        meta_list: ../datasets/RealEstate10K/train_valid_list.txt
-        video_length: 16
-        frame_stride: [1, 10]
-        frame_stride_for_condition: 0
-        resolution: [ 320, 512 ]
-        spatial_transform: resize_center_crop
-        invert_video: false
-
-    validation:
-      target: CameraControl.data.realestate10k.RealEstate10K
-      params:
-        data_dir: ../datasets/RealEstate10K/video_clips/test
-        meta_path: ../datasets/RealEstate10K/valid_metadata/test
-        meta_list: ../datasets/RealEstate10K/test_valid_list.txt
+        data_root: ../datasets/RealEstate10K
+        metadata_path: ../datasets/RealEstate10K/CamI2V_test_metadata_1k.pth
         video_length: 16
         frame_stride: 8
         frame_stride_for_condition: 0
-        resolution: [ 320, 512 ]
+        resolution: [ 256, 256 ]
         spatial_transform: resize_center_crop
-        invert_video: false
-
 
 lightning:
   trainer:
@@ -153,29 +164,23 @@ lightning:
     strategy: "deepspeed_stage_1"
     precision: "16-mixed"
     benchmark: true
-    accumulate_grad_batches: 8
-    max_steps: 50000
+    accumulate_grad_batches: 1
+    max_steps: 10000000
     # logger
     log_every_n_steps: 1000
     # val
     val_check_interval: 2000
     check_val_every_n_epoch: 1
-    num_sanity_val_steps: 8
+    num_sanity_val_steps: 0
     gradient_clip_algorithm: 'norm'
     gradient_clip_val: 0.5
   callbacks:
-    metrics_over_trainsteps_checkpoint:
-      target: pytorch_lightning.callbacks.ModelCheckpoint
-      params:
-        save_top_k: -1
-        filename: '{epoch}-{step}'
-        save_weights_only: false
-        every_n_train_steps: 50000
     batch_logger:
       target: callbacks.ImageLogger
       params:
         batch_frequency: 10000                      # optimization_steps
-        to_local: false
+        to_local: true
+        to_tensorboard: false
         max_images: 8
         save_suffix: ''
         log_images_kwargs:
@@ -184,3 +189,7 @@ lightning:
           unconditional_guidance_scale: 7.5
           timestep_spacing: uniform_trailing
           guidance_rescale: 0.7
+          sampled_img_num: 1
+          camera_cfg: 1.0
+          camera_cfg_scheduler: constant
+          enable_camera_condition: true

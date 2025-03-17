@@ -12,23 +12,41 @@ git submodule update --init
 
 For system dependencies and tool compilation, please refer to [installation guide](install.md).
 
+## Prepare Clip IDs for Test
+
+### Option 1: Use Provided `pth` File (Recommended)
+
+Download `CamI2V_test_metadata_1k.pth` and put under folder `datasets/RealEstate10K`:
+
+```
+wget https://huggingface.co/MuteApo/CamI2V/resolve/main/CamI2V_test_metadata_1k.pth
+mv CamI2V_test_metadata_1k.pth datasets/RealEstate10K/
+```
+
+### Option 2: Follow Instructions in Data Processing
+
+Please refer to [datasets](../datasets).
+
 ## Generate Videos for Test
 
+Example usage:
+
 ```shell
-config_file=<YOUR_CONFIG_FILE>
-save_root=<YOUR_SAVE_ROOT>
-suffix_name=<YOUR_CUSTOM_SUFFIX>
-torchrun --standalone --nproc_per_node 8 main/trainer.py --test --base $config_file --logdir $save_root --name $suffix_name
+config_file=configs/inference/003_cami2v_256x256.yaml
+save_root=../test_results
+suffix_name=256_CamI2V
+torchrun --standalone --nproc_per_node 8 main/trainer.py --test \
+    --base $config_file --logdir $save_root --name $suffix_name
 ```
 
 Resulting file structure would be like:
 
 ```
-─┬─ <YOUR_SAVE_ROOT>/                 <-- "save_root" variable above
- └─┬─ <YOUR_CUSTOM_SUFFIX>/           <-- "suffix_name" variable above
+─┬─ test_results/                <-- "save_root" variable above
+ └─┬─ 256_CamI2V/                <-- "suffix_name" variable above
    └──┬─ images/
       └─┬─ test/
-        └─┬─ <YOUR_CONFIG_SUFFIX>/    <-- auto generated from config yaml by trainer
+        └─┬─ <CONFIG_SUFFIX>/    <-- auto generated from "config_file" by trainer
           ├─── camera_data/
           ├─── condition/
           ├─── gt_video/
@@ -38,7 +56,7 @@ Resulting file structure would be like:
           └─── video_path/
 ```
 
-For convenience, we use `EXP_DIR=<YOUR_SAVE_ROOT>/<YOUR_CUSTOM_SUFFIX>/images/test/<YOUR_CONFIG_SUFFIX>` in evaluation code.
+For convenience, we use `EXP_DIR=${save_root}/${suffix_name}/images/test/<CONFIG_SUFFIX>` in evaluation code.
 
 ## Run Evaluation
 

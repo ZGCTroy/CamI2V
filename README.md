@@ -14,16 +14,17 @@ Furthermore, we develop a more robust and reproducible evaluation pipeline to ad
 ## :star2: News and Todo List
 
 
-- :fire: 2025/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications, code will be available at [repo](https://github.com/ZGCTroy/RealCam-I2V).
-- :fire: 2025/01/12: Release checkpoint of [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt). We plan to release a more advanced model with longer training soon.
-- :fire: 2025/01/02: Release checkpoint of [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), which is suitable for research propose and comparison.
-- :fire: 2024/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
-- :fire: 2024/12/23: Release checkpoint of [CamI2V (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
-- :fire: 2024/12/16: Release non-officially reproduced checkpoints of [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) on DynamiCrafter.
-- :fire: 2024/12/09: Release training configs and scripts.
-- :fire: 2024/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
-- :fire: 2024/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
-- :seedling: 2024/11/16: Release model code of CamI2V for training and inference, including implementation for MotionCtrl and CameraCtrl.
+- :fire: 25/03/17: Upload test metadata used in our paper to make easier evaluation.
+- :fire: 25/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications, code will be available at [repo](https://github.com/ZGCTroy/RealCam-I2V).
+- :fire: 25/01/12: Release checkpoint of [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt). We plan to release a more advanced model with longer training soon.
+- :fire: 25/01/02: Release checkpoint of [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), which is suitable for research propose and comparison.
+- :fire: 24/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by this powerful VLM.
+- :fire: 24/12/23: Release checkpoint of [CamI2V (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
+- :fire: 24/12/16: Release reproduced non-official checkpoints of [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) on [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter).
+- :fire: 24/12/09: Release training configs and scripts.
+- :fire: 24/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
+- :fire: 24/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
+- :seedling: 24/11/16: Release model code of CamI2V for training and inference, including implementation for MotionCtrl and CameraCtrl.
 
 ## :movie_camera: Gallery
 
