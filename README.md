@@ -45,17 +45,18 @@
 
 ## 🌟 News and Todo List
 
-- 🔥 25/03/17: Upload test metadata used in our paper to make easier evaluation.
-- 🔥 25/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications, code will be available at [repo](https://github.com/ZGCTroy/RealCam-I2V).
-- 🔥 25/01/12: Release [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt)checkpoint . We plan to release a more advanced model with longer training soon.
-- 🔥 25/01/02: Release [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt) checkpoint, which is suitable for research propose and comparison.
-- 🔥 24/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by it.
+- 🔥 25/03/26: Release our dataset [RealCam-Vid](https://huggingface.co/datasets/MuteApo/RealCam-Vid) v1, for metric-scale camera-controlled video generation!
+- 🔥 25/03/17: Upload test metadata used in our paper to make easier evaluation!
+- 🔥 25/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications, code will be available at [repo](https://github.com/ZGCTroy/RealCam-I2V)!
+- 🔥 25/01/12: Release [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt) checkpoint. We plan to release a more advanced model with longer training soon!
+- 🔥 25/01/02: Release [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt) checkpoint, which is suitable for research propose and comparison!
+- 🔥 24/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, caption your own input image by this powerful VLM!
 - 🔥 24/12/23: Release checkpoint of [CamI2V (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
-- 🔥 24/12/16: Release reproduced non-official [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) checkpoints on [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter).
+- 🔥 24/12/16: Release reproduced non-official [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) checkpoints.
 - 🔥 24/12/09: Release training configs and scripts.
 - 🔥 24/12/06: Release [dataset pre-process code](datasets) for RealEstate10K.
 - 🔥 24/12/02: Release [evaluation code](evaluation) for RotErr, TransErr, CamMC and FVD.
-- 🌱 24/11/16: Release model code of CamI2V, including implementation for MotionCtrl and CameraCtrl.
+- 🌱 24/11/16: Release model code of CamI2V on I2V model [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter), including implementation for MotionCtrl and CameraCtrl.
 
 ## 📈 Performance
 
