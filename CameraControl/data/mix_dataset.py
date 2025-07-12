@@ -14,6 +14,8 @@ class MixDataset(Dataset):
     def __init__(self,
                  metadata_path,
                  data_root,
+                 enable_per_frame_scale=False,
+                 enable_scene_scale=False,
                  video_length=16,
                  resolution=[256, 256],  # H, W
                  frame_stride=1,  # [min, max], do not larger than 32 when video_length=16
@@ -33,27 +35,60 @@ class MixDataset(Dataset):
 
         self.load_raw_resolution = load_raw_resolution
 
-        all_metadata = torch.load(self.metadata_path)
-        self.captions = np.array([metadata['caption'] for metadata in all_metadata], dtype=np.unicode_)
-        self.video_paths = np.array([metadata['video_path'] for metadata in all_metadata], dtype=np.unicode_)
-        self.num_frames = np.array([metadata['camera_extrinsics'].shape[0] for metadata in all_metadata])
-        self.camera_extrinsics = torch.cat([metadata['camera_extrinsics'] for metadata in all_metadata], dim=0).numpy()
-        self.end_idx = self.num_frames.cumsum()
-        self.start_idx = self.end_idx - self.num_frames
-        self.camera_intrinsics = []
-        for metadata in all_metadata:
-            camera_intrinsics = metadata['camera_intrinsics']
-            if camera_intrinsics.ndim == 1:
-                fx, fy, cx, cy = camera_intrinsics # [1, 4]
-                camera_intrinsics_3x3 = torch.Tensor([
-                    [fx, 0, cx],
-                    [0, fy, cy],
-                    [0, 0, 1]
-                ])  # 3x3
-                self.camera_intrinsics.append(camera_intrinsics_3x3)
-            else:
-                self.camera_intrinsics.append(camera_intrinsics)
-        self.camera_intrinsics = torch.stack(self.camera_intrinsics, dim=0).numpy() # num_data,3,3
+        if self.metadata_path.endswith(".pth"):
+            all_metadata = torch.load(self.metadata_path)
+            self.captions = np.array([metadata['caption'] for metadata in all_metadata], dtype=np.unicode_)
+            self.video_paths = np.array([metadata['video_path'] for metadata in all_metadata], dtype=np.unicode_)
+            self.num_frames = np.array([metadata['camera_extrinsics'].shape[0] for metadata in all_metadata])
+            self.camera_extrinsics = torch.cat([metadata['camera_extrinsics'] for metadata in all_metadata], dim=0).numpy()
+            self.end_idx = self.num_frames.cumsum()
+            self.start_idx = self.end_idx - self.num_frames
+            self.camera_intrinsics = []
+            for metadata in all_metadata:
+                camera_intrinsics = metadata['camera_intrinsics']
+                if camera_intrinsics.ndim == 1:
+                    fx, fy, cx, cy = camera_intrinsics # [1, 4]
+                    camera_intrinsics_3x3 = torch.Tensor([
+                        [fx, 0, cx],
+                        [0, fy, cy],
+                        [0, 0, 1]
+                    ])  # 3x3
+                    self.camera_intrinsics.append(camera_intrinsics_3x3)
+                else:
+                    self.camera_intrinsics.append(camera_intrinsics)
+            self.camera_intrinsics = torch.stack(self.camera_intrinsics, dim=0).numpy() # num_data,3,3
+        elif self.metadata_path.endswith(".npz"):
+            all_metadata = np.load(self.metadata_path, allow_pickle=True)["arr_0"].tolist()
+            self.captions = np.array([metadata['long_caption'] for metadata in all_metadata], dtype=np.unicode_)
+            self.video_paths = np.array([metadata['video_path'] for metadata in all_metadata], dtype=np.unicode_)
+            self.num_frames = np.array([metadata['camera_extrinsics'].shape[0] for metadata in all_metadata])
+            self.camera_extrinsics = np.concatenate([metadata['camera_extrinsics'] for metadata in all_metadata], axis=0)
+            self.end_idx = self.num_frames.cumsum()
+            self.start_idx = self.end_idx - self.num_frames
+            self.camera_intrinsics = []
+            for metadata in all_metadata:
+                camera_intrinsics = metadata['camera_intrinsics']
+                if camera_intrinsics.ndim == 1:
+                    fx, fy, cx, cy = camera_intrinsics # [1, 4]
+                    camera_intrinsics_3x3 = np.array([
+                        [fx, 0, cx],
+                        [0, fy, cy],
+                        [0, 0, 1]
+                    ])  # 3x3
+                    self.camera_intrinsics.append(camera_intrinsics_3x3)
+                else:
+                    self.camera_intrinsics.append(camera_intrinsics)
+            self.camera_intrinsics = np.stack(self.camera_intrinsics, axis=0) # num_data,3,3
+        else:
+            raise NotImplementedError(self.metadata_path)
+
+        if self.enable_per_frame_scale and 'per_frame_scale' in list(all_metadata[0].keys()):
+            self.per_frame_scales = torch.cat([metadata['per_frame_scale'] for metadata in all_metadata]).numpy()
+        if self.enable_scene_scale and 'scene_scale' in list(all_metadata[0].keys()):
+            self.per_frame_scales = torch.cat([
+                torch.tensor(metadata['scene_scale']).repeat(metadata['camera_extrinsics'].shape[0])
+                for metadata in all_metadata
+            ]).numpy()
 
         del all_metadata
 
@@ -177,6 +212,9 @@ class MixDataset(Dataset):
             'camera_data': camera_data,  # F, 19
             'camera_intrinsics': camera_intrinsics,  # Fx3x3
         }
+
+        if self.enable_per_frame_scale or self.enable_scene_scale:
+            data['per_frame_scale'] = torch.from_numpy(self.per_frame_scales[self.start_idx[index]:self.end_idx[index]])[frame_indices]  # F,
 
         return data
 

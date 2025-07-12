@@ -106,7 +106,8 @@ def constrain_to_multiple_of(x, min_val=0, max_val=None, multiple_of=14):
     return y
 
 
-def add_camera_trace(points, colors, points_x, points_y):
+def add_camera_trace(points_x, points_y):
+    points, colors = [], []
     x, y = points_x, points_y
     for idx in [[0, 0], [0, -1], [-1, 0], [-1, -1]]:
         camera, camera_colors = create_line_point_cloud(
@@ -114,8 +115,8 @@ def add_camera_trace(points, colors, points_x, points_y):
             end_point=np.array([x[idx[0]][idx[1]], y[idx[0]][idx[1]], 1.0]),
             num_points=50,
         )
-        points = np.concatenate((points, camera * 0.25), axis=0)
-        colors = np.concatenate((colors, camera_colors), axis=0)
+        points.append(camera * 0.05)
+        colors.append(camera_colors)
 
     for start_idx, end_idx in [
         [[0, 0], [0, -1]],
@@ -128,10 +129,10 @@ def add_camera_trace(points, colors, points_x, points_y):
             end_point=np.array([x[end_idx[0]][end_idx[1]], y[end_idx[0]][end_idx[1]], 1.0]),
             num_points=50,
         )
-        points = np.concatenate((points, camera * 0.25), axis=0)
-        colors = np.concatenate((colors, camera_colors), axis=0)
+        points.append(camera * 0.05)
+        colors.append(camera_colors)
 
-    return points, colors
+    return np.concatenate(points), np.concatenate(colors)
 
 
 def create_relative(RT_list, K_1=4.7, dataset="syn"):

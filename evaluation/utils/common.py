@@ -7,7 +7,7 @@ from typing import Literal
 import imageio
 import numpy as np
 import torch
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 from torch import Tensor
 
 

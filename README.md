@@ -45,11 +45,13 @@
 
 ## 🌟 News and Todo List
 
+- 🔥 25/07/12: Release model and evaluation code of RealCam-I2V (DynamiCrafter-based, for reproducing and comparing the results we report in paper) in this repo. For DiT-based (e.g. CogVideoX) version, please refer to [RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V).
+- 🔥 25/06/26: [RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V) is accepted by ICCV 2025! 🎉🎉
 - 🔥 25/03/17: Upload test metadata used in our paper to make easier evaluation.
-- 🔥 25/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications, code will be available at [repo](https://github.com/ZGCTroy/RealCam-I2V).
-- 🔥 25/01/12: Release [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt)checkpoint . We plan to release a more advanced model with longer training soon.
+- 🔥 25/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications.
+- 🔥 25/01/12: Release [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt) checkpoint with longer training.
 - 🔥 25/01/02: Release [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt) checkpoint, which is suitable for research propose and comparison.
-- 🔥 24/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo, you can now caption your own input image by it.
+- 🔥 24/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo.
 - 🔥 24/12/23: Release checkpoint of [CamI2V (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
 - 🔥 24/12/16: Release reproduced non-official [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) checkpoints on [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter).
 - 🔥 24/12/09: Release training configs and scripts.
@@ -82,9 +84,12 @@ Measured under 256x256 resolution, 50k training steps, 25 DDIM steps, text-image
 ### Quick Start
 
 ```shell
+apt install libgl1-mesa-glx libgl1-mesa-dri xvfb # for ubuntu
+yum install -y mesa-libGL mesa-dri-drivers Xvfb. # for centos
 conda create -n cami2v python=3.10
 conda activate cami2v
 
+conda install -y libstdcxx-ng=12 -c conda-forge
 conda install -y pytorch==2.4.1 torchvision==0.19.1 pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install -y xformers -c xformers
 pip install -r requirements.txt
@@ -94,37 +99,33 @@ pip install -r requirements.txt
 
 ### Download Model Checkpoints
 
-| Model      | Resolution |                                                                    Training Steps                                                                    |
-| :--------- | :--------: | :--------------------------------------------------------------------------------------------------------------------------------------------------: |
-| CamI2V     |  512x320   | [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), [100k](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt) |
-| CamI2V     |  256x256   |                                         [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt)                                         |
-| CameraCtrl |  256x256   |                                       [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt)                                       |
-| MotionCtrl |  256x256   |                                       [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt)                                       |
+| Model       | Resolution |                                                                    Training Steps                                                                    |
+| :---------- | :--------: | :--------------------------------------------------------------------------------------------------------------------------------------------------: |
+| RealCam-I2V |  512x320   |                                [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/512_realcam-i2v_50k.safetensors)                                |
+| RealCam-I2V |  256x256   |                                [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_realcam-i2v_50k.safetensors)                                |
+| CamI2V      |  512x320   | [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt), [100k](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt) |
+| CamI2V      |  256x256   |                                         [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt)                                         |
+| CameraCtrl  |  256x256   |                                       [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt)                                       |
+| MotionCtrl  |  256x256   |                                       [50k](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt)                                       |
 
-Currently we release 256x256 checkpoints with 50k training steps of DynamiCrafter-based CamI2V, CameraCtrl and MotionCtrl, which is suitable for research propose and comparison.
+Currently we release 256x256 checkpoints with 50k training steps of DynamiCrafter-based RealCam-I2V, CamI2V, CameraCtrl and MotionCtrl, which is suitable for research propose and comparison.
 
-We also release 512x320 checkpoints of our CamI2V with longer training, make possible higher resolution and more advanced camera-controlled video generation.
+We also release 512x320 checkpoints of RealCam-I2V and CamI2V, make possible higher resolution and more advanced camera-controlled video generation.
 
 Download above checkpoints and put under `ckpts` folder.
 Please edit `ckpt_path` in `configs/models.json` if you have a different model path.
 
-### Download Qwen2-VL Captioner (Optional)
+Download [Depth Anything V2 (metric version)](depth-anything/Depth-Anything-V2-Metric-Hypersim-Large) and put under `pretrained_models` folder for metric depth estimation.
 
-Not required but recommend.
-It is used to caption your custom image in gradio demo for video generaion.
-We prefer the [AWQ](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-AWQ) quantized version of Qwen2-VL due to speed and GPU memory.
+Download [Qwen2-VL](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct-AWQ) and put under `pretrained_models` folder for image caption in gradio demo for video generaion.
+AWQ-quantized version is prefered due to speed and GPU memory.
 
-Download the pre-trained model and put under `pretrained_models` folder:
-
-```shell
-─┬─ pretrained_models/
- └─── Qwen2-VL-7B-Instruct-AWQ/
-```
 
 ### Run Gradio Demo
 
 ```shell
-python cami2v_gradio_app.py --use_qwenvl_captioner
+python cami2v_gradio_app.py --use_qwenvl_captioner  # for cami2v
+python realcami2v_gradio_app.py --use_qwenvl_captioner  # for realcam-i2v
 ```
 
 Gradio may struggle to establish network connection, please re-try with `--use_host_ip`.
@@ -168,6 +169,10 @@ Support for VBench is planned in months as well.
 
 [RealCam-I2V: https://github.com/ZGCTroy/RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V)
 
+[RealCam-Vid: https://github.com/ZGCTroy/RealCam-Vid](https://github.com/ZGCTroy/RealCam-Vid)
+
+[Depth Anything V2: https://github.com/DepthAnything/Depth-Anything-V2](https://github.com/DepthAnything/Depth-Anything-V2)
+
 [CameraCtrl: https://github.com/hehao13/CameraCtrl](https://github.com/hehao13/CameraCtrl)
 
 [MotionCtrl: https://github.com/TencentARC/MotionCtrl](https://github.com/TencentARC/MotionCtrl)
@@ -188,6 +193,13 @@ Support for VBench is planned in months as well.
     title={RealCam-I2V: Real-World Image-to-Video Generation with Interactive Complex Camera Control}, 
     author={Li, Teng and Zheng, Guangcong and Jiang, Rui and Zhan, Shuigen and Wu, Tao and Lu, Yehao and Lin, Yining and Li, Xi},
     journal={arXiv preprint arXiv:2502.10059},
+    year={2025},
+}
+
+@article{zheng2025realcam,
+    title={RealCam-Vid: High-resolution Video Dataset with Dynamic Scenes and Metric-scale Camera Movements}, 
+    author={Zheng, Guangcong and Li, Teng and Zhou, Xianpan and Li, Xi},
+    journal={arXiv preprint arXiv:2504.08212},
     year={2025},
 }
 ```

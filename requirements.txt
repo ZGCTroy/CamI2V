@@ -8,15 +8,15 @@ tqdm
 PyYAML
 setuptools
 scikit-learn
-lightning==2.4.0
+lightning
 deepspeed
 open3d
 decord
 omegaconf
 opencv_python
 pandas
-moviepy<2
-av<14
+moviepy
+av
 gradio
 timm
 kornia
@@ -28,3 +28,5 @@ accelerate
 qwen_vl_utils[decord]
 optimum
 autoawq
+pyvirtualdisplay
+open3d
