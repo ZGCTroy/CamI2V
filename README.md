@@ -43,15 +43,15 @@
     </tr>
 </table>
 
-## 🌟 News and Todo List
+## 🌟 News
 
-- 🔥 25/07/12: Release model and evaluation code of RealCam-I2V (DynamiCrafter-based, for reproducing and comparing the results we report in paper) in this repo. For DiT-based (e.g. CogVideoX) version, please refer to [RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V).
+- 🔥 25/07/12: Release model and evaluation code of RealCam-I2V (DynamiCrafter-based, for reproducing and comparing the results we report in paper). For DiT-based (e.g. CogVideoX) version, please refer to [RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V).
 - 🔥 25/06/26: [RealCam-I2V](https://github.com/ZGCTroy/RealCam-I2V) is accepted by ICCV 2025! 🎉🎉
+- 🔥 25/03/26: Release our dataset [RealCam-Vid](https://github.com/ZGCTroy/RealCam-Vid) v1 for metric-scale camera-controlled video generation!
 - 🔥 25/03/17: Upload test metadata used in our paper to make easier evaluation.
 - 🔥 25/02/15: Release demo of [RealCam-I2V](https://zgctroy.github.io/RealCam-I2V/) for real-world applications.
 - 🔥 25/01/12: Release [CamI2V (512x320, 100k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_100k.pt) checkpoint with longer training.
 - 🔥 25/01/02: Release [CamI2V (512x320, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/512_cami2v_50k.pt) checkpoint, which is suitable for research propose and comparison.
-- 🔥 24/12/24: Integrate [Qwen2-VL](https://github.com/QwenLM/Qwen2-VL) in gradio demo.
 - 🔥 24/12/23: Release checkpoint of [CamI2V (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cami2v.pt).
 - 🔥 24/12/16: Release reproduced non-official [MotionCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_motionctrl.pt) and [CameraCtrl (256x256, 50k)](https://huggingface.co/MuteApo/CamI2V/blob/main/256_cameractrl.pt) checkpoints on [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter).
 - 🔥 24/12/09: Release training configs and scripts.
