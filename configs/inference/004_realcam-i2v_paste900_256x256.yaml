@@ -210,3 +210,7 @@ lightning:
           camera_cfg: 1.0
           camera_cfg_scheduler: constant
           enable_camera_condition: true
+          preview: true
+          result_dir: /tmp
+          noise_shaping: true
+          noise_shaping_minimum_timesteps: 900

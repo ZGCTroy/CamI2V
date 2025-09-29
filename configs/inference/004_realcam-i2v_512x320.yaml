@@ -1,5 +1,7 @@
 model:
-  pretrained_checkpoint: pretrained_models/DynamiCrafter_512/model.ckpt
+  pretrained_checkpoint:
+    - pretrained_models/DynamiCrafter/model.ckpt
+    - ckpts/512_realcam-i2v_50k.safetensors
   base_learning_rate: 1e-4
   scale_lr: false
   target: CameraControl.realcam_i2v.realcam_i2v.RealCam_I2V
@@ -161,12 +163,14 @@ data:
       target: CameraControl.data.mix_dataset.MixDataset
       params:
         data_root: ../datasets/RealEstate10K
-        metadata_path: ../datasets/RealEstate10K/CamI2V_test_metadata_1k.pth
+        metadata_path: ../datasets/RealEstate10K/RealCam-I2V_test_metadata_1k.pth
         video_length: 16
         frame_stride: 8
         frame_stride_for_condition: 0
         resolution: [ 320, 512 ]
         spatial_transform: resize_center_crop
+        enable_per_frame_scale: true
+        enable_scene_scale: false
 
 lightning:
   trainer:

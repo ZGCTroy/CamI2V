@@ -30,9 +30,9 @@ def order(file):
     return method, [capture(*v) for v in configs.values()]
 
 
-metrics = ["RotErr", "TransErr", "CamMC"]
+metrics = ["RotErr", "TransErr_rel", "CamMC_rel", "TransErr_abs", "CamMC_abs"]
 with open("summary.csv", "w") as f:
-    f.write("Method,ImageTextcfg,CameraCfg,Time," + ",".join(metrics) + "\n")
+    f.write("Method,ImageTextcfg,CameraCfg," + ",".join(metrics) + "\n")
 
 summary = []
 for file in sorted(glob.glob("results/*/*/merge.csv"), key=order):
@@ -46,6 +46,6 @@ for file in sorted(glob.glob("results/*/*/merge.csv"), key=order):
 
     summary.append([method, ticfg, ccfg] + data)
 
-    print(list(map(lambda x: round(x, 4), data)))
+    print(dict(zip(metrics, map(lambda x: round(x, 4), data))))
 
 pd.DataFrame(summary).to_csv("summary.csv", mode="a", header=False, index=False)

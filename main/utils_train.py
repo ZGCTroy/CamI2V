@@ -1,10 +1,11 @@
-import os, re
-from omegaconf import OmegaConf
 import logging
-mainlogger = logging.getLogger('mainlogger')
+import os
 
 import torch
-from collections import OrderedDict
+from omegaconf import ListConfig, OmegaConf
+from safetensors.torch import load_file
+
+mainlogger = logging.getLogger('mainlogger')
 
 def init_workspace(name, logdir, model_config, lightning_config, rank=0):
     workdir = os.path.join(logdir, name)
@@ -135,53 +136,49 @@ def get_trainer_strategy(lightning_config):
     strategy_cfg = OmegaConf.merge(default_strategy_dict, strategy_cfg)
     return strategy_cfg
 
+def smart_load(ckpt: str):
+    if ckpt.endswith(".safetensors"):
+        return load_file(ckpt)
+    elif ckpt.endswith((".pt", ".pth", ".ckpt")):
+        return torch.load(ckpt, map_location="cpu", weights_only=True)
+    else:
+        raise ValueError(f"Unsupported checkpoint format {ckpt}")
+
 def load_checkpoints(model, model_cfg):
     if check_config_attribute(model_cfg, "pretrained_checkpoint"):
-        pretrained_ckpt = model_cfg.pretrained_checkpoint
-        assert os.path.exists(pretrained_ckpt), "Error: Pre-trained checkpoint NOT found at:%s"%pretrained_ckpt
-        mainlogger.info(">>> Load weights from pretrained checkpoint")
+        if isinstance(model_cfg.pretrained_checkpoint, ListConfig):  # inference with partial ckpt
+            pretrained_ckpt, inference_ckpt = model_cfg.pretrained_checkpoint
+            mainlogger.info(f">>> Load weights from pretrained checkpoint {pretrained_ckpt} and {inference_ckpt}")
+            pl_sd = smart_load(pretrained_ckpt)["state_dict"] | smart_load(inference_ckpt)
+        else:
+            pretrained_ckpt = model_cfg.pretrained_checkpoint
+            mainlogger.info(f">>> Load weights from pretrained checkpoint {pretrained_ckpt}")
+            pl_sd = smart_load(pretrained_ckpt)
 
-        pl_sd = torch.load(pretrained_ckpt, map_location="cpu")
-        try:
-            if 'state_dict' in pl_sd.keys():  # ddp
-                try:
-                    model.load_state_dict(pl_sd["state_dict"], strict=True)
-                except:
-                    ## rename the keys for 256x256 model
-                    new_pl_sd = OrderedDict()
-                    for k, v in pl_sd["state_dict"].items():
-                        new_pl_sd[k] = v
+            if "module" in pl_sd.keys():  # deepspeed
+                pl_sd = pl_sd["module"]
 
-                    for k in list(new_pl_sd.keys()):
-                        if "framestride_embed" in k:
-                            new_key = k.replace("framestride_embed", "fps_embedding")
-                            new_pl_sd[new_key] = new_pl_sd[k]
-                            del new_pl_sd[k]
-                    try:
-                        model.load_state_dict(new_pl_sd, strict=True)
-                        print('ddp load mode strict=True succeeded')
-                    except:
-                        model.load_state_dict(new_pl_sd, strict=False)
-                        print('ddp load mode strict=False succeeded')
-                    del new_pl_sd
+            if "state_dict" in pl_sd.keys():  # ddp
+                pl_sd = pl_sd["state_dict"]
 
-                mainlogger.info(">>> Loaded weights from pretrained checkpoint: %s"%pretrained_ckpt)
-            else:  # deepspeed
-                new_pl_sd = OrderedDict()
-                for key in pl_sd['module'].keys():
-                    # new_pl_sd[key[16:]]=pl_sd['module'][key]
-                    new_pl_sd[key]=pl_sd['module'][key]
-                try:
-                    model.load_state_dict(new_pl_sd, strict=True)
-                    print('deepspeed load mode strict=True succeeded')
-                except:
-                    model.load_state_dict(new_pl_sd, strict=False)
-                    print('deepspeed load mode strict=False succeeded')
-        except:
-            model.load_state_dict(pl_sd)
-            print('ddp & deepspeed load failed, plain load succeeded')
+        ## rename the keys for 256x256 model
+        for k in list(pl_sd.keys()):
+            if "framestride_embed" in k:
+                new_key = k.replace("framestride_embed", "fps_embedding")
+                pl_sd[new_key] = pl_sd.pop(k)
 
-        del pl_sd
+        if check_config_attribute(model_cfg.params, "depth_predictor_config"):
+            pl_sd |= {
+                f"depth_predictor.{k}": v
+                for k, v in smart_load(model_cfg.params.depth_predictor_config.pretrained_model_path).items()
+            }
+            pl_sd |= {
+                "depth_predictor_normalizer_mean": torch.tensor([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1),
+                "depth_predictor_normalizer_std": torch.tensor([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1),
+            }
+
+        model.load_state_dict(pl_sd)
+
     else:
         mainlogger.info(">>> Start training from scratch")
 

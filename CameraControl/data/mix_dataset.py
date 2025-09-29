@@ -25,6 +25,8 @@ class MixDataset(Dataset):
                  ):
         self.metadata_path = metadata_path
         self.data_root = data_root
+        self.enable_per_frame_scale = enable_per_frame_scale
+        self.enable_scene_scale = enable_scene_scale
 
         self.video_length = video_length
         self.resolution = [resolution, resolution] if isinstance(resolution, int) else resolution
@@ -36,7 +38,7 @@ class MixDataset(Dataset):
         self.load_raw_resolution = load_raw_resolution
 
         if self.metadata_path.endswith(".pth"):
-            all_metadata = torch.load(self.metadata_path)
+            all_metadata = torch.load(self.metadata_path, weights_only=False)
             self.captions = np.array([metadata['caption'] for metadata in all_metadata], dtype=np.unicode_)
             self.video_paths = np.array([metadata['video_path'] for metadata in all_metadata], dtype=np.unicode_)
             self.num_frames = np.array([metadata['camera_extrinsics'].shape[0] for metadata in all_metadata])
@@ -211,6 +213,10 @@ class MixDataset(Dataset):
             'RT': camera_extrinsics,  # Fx4x4
             'camera_data': camera_data,  # F, 19
             'camera_intrinsics': camera_intrinsics,  # Fx3x3
+            'resized_W': [resized_W],
+            'resized_H': [resized_H],
+            'resized_W2': [resized_W],
+            'resized_H2': [resized_H],
         }
 
         if self.enable_per_frame_scale or self.enable_scene_scale:

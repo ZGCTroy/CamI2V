@@ -1,14 +1,15 @@
 import os
-import numpy as np
-from tqdm import tqdm
-from PIL import Image
-from einops import rearrange
+import pprint
 
+import numpy as np
 import torch
 import torchvision
+from einops import rearrange
+from PIL import Image
 from torch import Tensor
-from torchvision.utils import make_grid
 from torchvision.transforms.functional import to_tensor
+from torchvision.utils import make_grid
+from tqdm import tqdm
 
 
 def frames_to_mp4(frame_dir,output_path,fps):
@@ -132,6 +133,11 @@ def log_local(batch_logs, save_dir, filename, save_fps=10, rescale=True):
 def prepare_to_log(batch_logs, max_images=100000, clamp=True):
     if batch_logs is None:
         return None
+
+    for key in ["H", "W", "resized_W", "resized_H", "resized_W2", "resized_H2"]:
+        if key in batch_logs:
+            batch_logs.pop(key)
+
     # process
     for key in batch_logs:
         N = batch_logs[key].shape[0] if hasattr(batch_logs[key], 'shape') else len(batch_logs[key])

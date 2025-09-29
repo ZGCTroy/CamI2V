@@ -1,20 +1,32 @@
-import argparse, os, sys, datetime
-from omegaconf import OmegaConf
-from transformers import logging as transf_logging
+import argparse
+import datetime
+import os
+import sys
+
 import pytorch_lightning as pl
+import torch
+from lightning.pytorch.profilers import AdvancedProfiler
+from omegaconf import OmegaConf
 from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
-import torch
+from transformers import logging as transf_logging
+
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 sys.path.insert(2, os.path.join(sys.path[0], '../DynDepth-Anything-V2/metric_depth'))
+from utils_train import (
+    get_trainer_callbacks,
+    get_trainer_logger,
+    get_trainer_strategy,
+    init_workspace,
+    load_checkpoints,
+    set_logger,
+)
+
 from utils.utils import instantiate_from_config
-from utils_train import get_trainer_callbacks, get_trainer_logger, get_trainer_strategy
-from utils_train import set_logger, init_workspace, load_checkpoints
-import pdb
+
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
-from lightning.pytorch.profilers import AdvancedProfiler
 
 def get_parser(**parser_kwargs):
     parser = argparse.ArgumentParser(**parser_kwargs)
@@ -161,7 +173,7 @@ if __name__ == "__main__":
 
     def divein(*args, **kwargs):
         if trainer.global_rank == 0:
-            import pudb;
+            import pudb
             pudb.set_trace()
 
     import signal
